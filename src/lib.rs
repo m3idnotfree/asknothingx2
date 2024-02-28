@@ -2,6 +2,12 @@ use futures_util::{Future, SinkExt, StreamExt};
 use tokio::sync::mpsc::{self, Receiver};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Failed tungstenite: {0}")]
+    TungsteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+}
+
 #[derive(Debug)]
 pub struct TwitchIrcClient {
     commands: bool,
@@ -41,10 +47,7 @@ impl TwitchIrcClient {
         self
     }
 
-    pub async fn run(
-        self,
-    ) -> Result<(Receiver<String>, impl Future<Output = ()>), tokio_tungstenite::tungstenite::Error>
-    {
+    pub async fn run(self) -> Result<(Receiver<String>, impl Future<Output = ()>), Error> {
         let (tx, rx) = mpsc::channel(1024);
         let mut capabilities = vec![];
         if self.commands {
