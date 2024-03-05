@@ -1,7 +1,11 @@
 [package]
 name = "twitch_asknothingx2"
 version = "0.0.1"
+authors = ["m3id"]
 edition = "2021"
+description = "Twitch irc client"
+license = "MIT OR Apache-2.0"
+keywords = ["twitch"]
 
 [dependencies]
 futures-util = "0.3.30"
