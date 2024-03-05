@@ -2,33 +2,35 @@ use futures_util::{Future, SinkExt, StreamExt};
 use tokio::sync::mpsc::{self, Receiver};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
+type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Failed tungstenite: {0}")]
-    TungsteniteError(#[from] tokio_tungstenite::tungstenite::Error),
+    #[error("Failed twitch send text: {0}")]
+    SendWssError(#[from] tokio_tungstenite::tungstenite::Error),
 }
 
 #[derive(Debug)]
-pub struct TwitchIrcClient {
+pub struct TwitchIrcClient<'a> {
     commands: bool,
     membership: bool,
     tags: bool,
-    nick: String,
-    channel: String,
-    access_token: String,
-    client: String,
+    nick: &'a str,
+    channel: &'a str,
+    access_token: &'a str,
+    client: &'a str,
 }
 
-impl TwitchIrcClient {
-    pub fn new<T: Into<String>>(nick: T, channel: T, access_token: T) -> TwitchIrcClient {
+impl<'a> TwitchIrcClient<'a> {
+    pub fn new(nick: &'a str, channel: &'a str, access_token: &'a str) -> TwitchIrcClient<'a> {
         TwitchIrcClient {
             commands: false,
             membership: false,
             tags: false,
-            nick: nick.into(),
-            channel: channel.into(),
-            access_token: access_token.into(),
-            client: "wss://irc-ws.chat.twitch.tv:443".into(),
+            nick,
+            channel,
+            access_token,
+            client: "wss://irc-ws.chat.twitch.tv:443",
         }
     }
 
@@ -47,7 +49,7 @@ impl TwitchIrcClient {
         self
     }
 
-    pub async fn run(self) -> Result<(Receiver<String>, impl Future<Output = ()>), Error> {
+    pub async fn run(self) -> Result<(Receiver<String>, impl Future<Output = ()>)> {
         let (tx, rx) = mpsc::channel(1024);
         let mut capabilities = vec![];
         if self.commands {
