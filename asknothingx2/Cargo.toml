@@ -1,0 +1,15 @@
+[package]
+name = "asknothingx2"
+version = "0.0.1"
+authors = ["m3id"]
+edition = "2021"
+description = "Twitch "
+license = "MIT OR Apache-2.0"
+keywords = ["twitch", "asknothing"]
+
+[dependencies]
+futures-util = "0.3.31"
+thiserror = "1.0.64"
+tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "sync"] }
+tokio-tungstenite = { version = "0.24.0", features = ["native-tls", "rustls"] }
+url = "2.5.2"
