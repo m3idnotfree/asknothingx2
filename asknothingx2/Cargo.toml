@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = ["m3id"]
 edition = "2021"
 description = "Twitch "
+repository = "https://github.com/m3idnotfree/asknothingx2"
 license = "MIT OR Apache-2.0"
 keywords = ["twitch", "asknothing"]
 
