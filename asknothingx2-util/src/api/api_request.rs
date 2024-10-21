@@ -40,7 +40,7 @@ pub async fn api_request<T: APIRequest>(request: T) -> Result<reqwest::Response,
     } else if is_content_type_text(&headers) && request.text().is_some() {
         client.headers(headers).body(request.text().unwrap())
     } else {
-        client
+        client.headers(headers)
     };
 
     let response = client.send().await?;
