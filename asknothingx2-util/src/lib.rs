@@ -1,6 +1,4 @@
-#[cfg(feature = "api-request")]
-pub use api_request::*;
-mod api_request;
-
-pub mod tqpe;
-pub mod treit;
+#[cfg(feature = "api")]
+pub mod api;
+#[cfg(feature = "oauth")]
+pub mod oauth;
