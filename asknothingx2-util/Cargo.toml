@@ -1,0 +1,20 @@
+[package]
+name = "asknothingx2-util"
+version = "0.0.1"
+authors = ["m3id"]
+edition = "2021"
+description = "asknothing"
+repository = "https://github.com/m3idnotfree/asknothingx2"
+license = "MIT OR Apache-2.0"
+keywords = ["asknothing", "oauth2", "http"]
+
+[features]
+oauth = []
+api-request = []
+
+
+[dependencies]
+http = "1.1.0"
+oauth2 = "4.4.2"
+reqwest = { version = "0.12.8", features = ["json"] }
+url = "2.5.2"
