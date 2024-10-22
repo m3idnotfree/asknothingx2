@@ -1,11 +1,12 @@
 use super::{CONTENT_TYPE_FORMENCODED, CONTENT_TYPE_JSON, CONTENT_TYPE_TEXT};
-use http::{header::CONTENT_TYPE, HeaderMap};
+use http::{header::CONTENT_TYPE, HeaderMap, Method};
+use url::Url;
 
 pub trait APIRequest {
-    fn method(&self) -> http::Method;
-    fn url(&self) -> url::Url;
-    fn headers(&self) -> http::HeaderMap {
-        http::HeaderMap::new()
+    fn method(&self) -> Method;
+    fn url(&self) -> Url;
+    fn headers(&self) -> HeaderMap {
+        HeaderMap::new()
     }
     fn json(&self) -> Option<String> {
         None
