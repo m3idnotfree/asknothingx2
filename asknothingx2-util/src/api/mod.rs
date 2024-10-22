@@ -7,4 +7,4 @@ pub use api_request::*;
 mod header_builder;
 pub use header_builder::*;
 
-pub use http::{HeaderMap, Method};
+pub use http::{HeaderMap, Method, StatusCode};
