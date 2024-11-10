@@ -5,7 +5,7 @@ authors = ["m3id"]
 edition = "2021"
 description = "asknothing"
 repository = "https://github.com/m3idnotfree/asknothingx2"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 keywords = ["asknothing", "oauth2", "http"]
 
 [features]
