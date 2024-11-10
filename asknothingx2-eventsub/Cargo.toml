@@ -1,6 +1,6 @@
 [package]
 name = "asknothingx2-eventsub"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["m3id"]
 edition = "2021"
 description = "Twitch eventsub"
