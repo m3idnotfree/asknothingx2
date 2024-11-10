@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::MetaData;
 
@@ -13,7 +14,7 @@ pub struct Notification {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NotificationPayload {
     pub subscription: NotificationSubscription,
-    pub event: HashMap<String, String>,
+    pub event: Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
