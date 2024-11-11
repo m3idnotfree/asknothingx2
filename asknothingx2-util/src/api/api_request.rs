@@ -1,5 +1,6 @@
 use super::{CONTENT_TYPE_FORMENCODED, CONTENT_TYPE_JSON, CONTENT_TYPE_TEXT};
 use http::{header::CONTENT_TYPE, HeaderMap, Method};
+use serde::Serialize;
 use url::Url;
 
 pub trait APIRequest {
@@ -23,6 +24,13 @@ pub trait APIRequest {
             .extend_pairs(params)
             .finish()
             .into_bytes()
+    }
+
+    fn json_to_string<T>(value: &T) -> Result<String, serde_json::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        serde_json::to_string(value)
     }
 }
 
