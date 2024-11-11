@@ -54,6 +54,16 @@ impl HeaderBuilder {
         self
     }
 
+    /// Client-Id: <id>
+    pub fn client_id(mut self, id: &str) -> Self {
+        self._inner.append(
+            HeaderName::from_str("Client-Id").unwrap(),
+            HeaderValue::from_str(id).unwrap(),
+        );
+
+        self
+    }
+
     pub fn build(self) -> HeaderMap {
         self._inner
     }
