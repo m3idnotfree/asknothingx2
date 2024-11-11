@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use http::{
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
-    HeaderMap, HeaderValue,
+    HeaderMap, HeaderName, HeaderValue,
 };
 
 use super::{CONTENT_TYPE_FORMENCODED, CONTENT_TYPE_JSON};
@@ -29,6 +31,20 @@ impl HeaderBuilder {
         self._inner.append(CONTENT_TYPE, CONTENT_TYPE_FORMENCODED());
         self
     }
+
+    /// CONTENT-TYPE: application/json
+    pub fn content_type_json(mut self) -> Self {
+        self._inner.append(CONTENT_TYPE, CONTENT_TYPE_JSON());
+        self
+    }
+
+    pub fn append(mut self, key: &str, value: &str) -> Result<Self, http::Error> {
+        self._inner
+            .append(HeaderName::from_str(key)?, HeaderValue::from_str(value)?);
+
+        Ok(self)
+    }
+
     /// Authorization: <type> <credentials>
     pub fn authorization(mut self, kind: &str, credentials: &str) -> Self {
         self._inner.append(
