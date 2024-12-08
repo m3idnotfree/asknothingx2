@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
+use chrono::{DateTime, FixedOffset};
 use serde::{de::Expected, Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetaData {
     pub message_id: String,
     pub message_type: MessageType,
-    pub message_timestamp: String,
+    pub message_timestamp: DateTime<FixedOffset>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

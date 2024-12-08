@@ -1,3 +1,4 @@
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 
 use super::MetaData;
@@ -19,5 +20,5 @@ pub struct ReconnectSession {
     pub status: String,
     pub keepalive_timeout_seconds: Option<u64>,
     pub reconnect_url: String,
-    pub connected_at: String,
+    pub connected_at: DateTime<FixedOffset>,
 }

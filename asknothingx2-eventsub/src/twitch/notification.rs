@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -27,5 +28,5 @@ pub struct NotificationSubscription {
     pub cost: u64,
     pub condition: HashMap<String, String>,
     pub transport: HashMap<String, String>,
-    pub created_at: String,
+    pub created_at: DateTime<FixedOffset>,
 }
