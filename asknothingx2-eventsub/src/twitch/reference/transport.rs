@@ -13,8 +13,29 @@ pub enum TransportMethod {
     Conduit,
 }
 
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct Transport {
+//     pub method: TransportMethod,
+//     /// webhook
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub callback: Option<String>,
+//     /// webhook
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub secret: Option<String>,
+//     /// websocket
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub session_id: Option<String>,
+//     /// websocket
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub connected_at: Option<String>,
+//     /// websocket
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub disconnected_at: Option<String>,
+// }
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Transport {
+#[serde(rename = "transport")]
+pub struct TransportWh {
     pub method: TransportMethod,
     /// webhook
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,32 +43,11 @@ pub struct Transport {
     /// webhook
     #[serde(skip_serializing_if = "Option::is_none")]
     pub secret: Option<String>,
-    /// websocket
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_id: Option<String>,
-    /// websocket
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub connected_at: Option<String>,
-    /// websocket
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub disconnected_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "transport")]
-pub struct TransportWebhook {
-    pub method: TransportMethod,
-    /// webhook
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub callback: Option<String>,
-    /// webhook
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub secret: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename = "transport")]
-pub struct TransportWebsocket {
+pub struct TransportWs {
     pub method: TransportMethod,
     pub session_id: String,
     // #[serde(skip_serializing_if = "Option::is_none")]

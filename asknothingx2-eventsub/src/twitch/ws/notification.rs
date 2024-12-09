@@ -4,7 +4,7 @@ use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::twitch::reference::TransportWebsocket;
+use crate::twitch::reference::TransportWs;
 
 use super::MetaData;
 
@@ -29,6 +29,6 @@ pub struct NotificationSubscription {
     pub version: String,
     pub cost: u64,
     pub condition: HashMap<String, String>,
-    pub transport: TransportWebsocket,
+    pub transport: TransportWs,
     pub created_at: DateTime<FixedOffset>,
 }
