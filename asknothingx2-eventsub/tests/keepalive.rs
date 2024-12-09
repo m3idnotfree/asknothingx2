@@ -1,4 +1,4 @@
-use asknothingx2_eventsub::twitch::websocket::{Keepalive, MessageType};
+use asknothingx2_eventsub::twitch::ws::{Keepalive, MessageType};
 
 mod util;
 

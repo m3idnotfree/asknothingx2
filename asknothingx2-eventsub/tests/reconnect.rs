@@ -1,4 +1,4 @@
-use asknothingx2_eventsub::twitch::websocket::{MessageType, Reconnect};
+use asknothingx2_eventsub::twitch::ws::{MessageType, Reconnect};
 
 mod util;
 

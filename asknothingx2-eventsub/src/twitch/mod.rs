@@ -1,2 +1,2 @@
 pub mod reference;
-pub mod websocket;
+pub mod ws;

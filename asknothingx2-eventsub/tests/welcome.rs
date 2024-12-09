@@ -1,4 +1,4 @@
-use asknothingx2_eventsub::twitch::websocket::{MessageType, Welcome};
+use asknothingx2_eventsub::twitch::ws::{MessageType, Welcome};
 
 mod util;
 

@@ -1,6 +1,6 @@
 use asknothingx2_eventsub::twitch::{
     reference::TransportMethod,
-    websocket::{MessageType, Notification},
+    ws::{MessageType, Notification},
 };
 
 mod util;
