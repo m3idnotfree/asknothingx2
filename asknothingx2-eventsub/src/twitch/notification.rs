@@ -4,7 +4,7 @@ use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::MetaData;
+use super::{reference::Transport, MetaData};
 
 #[derive(Debug, Serialize)]
 pub struct Notification {
@@ -27,6 +27,6 @@ pub struct NotificationSubscription {
     pub version: String,
     pub cost: u64,
     pub condition: HashMap<String, String>,
-    pub transport: HashMap<String, String>,
+    pub transport: Transport,
     pub created_at: DateTime<FixedOffset>,
 }

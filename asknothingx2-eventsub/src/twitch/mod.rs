@@ -10,6 +10,7 @@ mod reconnect;
 pub use reconnect::*;
 mod revocation;
 pub use revocation::*;
+pub mod reference;
 
 use serde::{
     de::{Unexpected, Visitor},
