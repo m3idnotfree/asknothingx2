@@ -1,11 +1,11 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 
-use super::MetaData;
+use super::MetaDataWithoutSub;
 
 #[derive(Debug, Serialize)]
 pub struct Welcome {
-    pub metadata: MetaData,
+    pub metadata: MetaDataWithoutSub,
     pub payload: WelcomePayload,
 }
 

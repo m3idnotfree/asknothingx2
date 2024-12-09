@@ -8,10 +8,21 @@ pub struct MetaData {
     pub message_id: String,
     pub message_type: MessageType,
     pub message_timestamp: DateTime<FixedOffset>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subscription_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subscription_version: Option<String>,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscription_type: String,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscription_version: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MetaDataWithoutSub {
+    pub message_id: String,
+    pub message_type: MessageType,
+    pub message_timestamp: DateTime<FixedOffset>,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub subscription_type: Option<String>,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub subscription_version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
