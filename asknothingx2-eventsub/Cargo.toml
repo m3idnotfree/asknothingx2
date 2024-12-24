@@ -8,6 +8,12 @@ repository = "https://github.com/m3idnotfree/asknothingx2"
 license = "MIT"
 keywords = ["twitch"]
 
+[features]
+default = ["types"]
+subscription-type = []
+reference = []
+types = ["subscription-type", "reference"]
+
 [dependencies]
 chrono = { version = "0.4.38", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
