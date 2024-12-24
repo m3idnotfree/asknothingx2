@@ -1,2 +1,8 @@
+pub mod payload;
+pub mod websocket_message;
+
+#[cfg(feature = "reference")]
 pub mod reference;
-pub mod ws;
+
+#[cfg(feature = "subscription-type")]
+pub mod subscription_type;
