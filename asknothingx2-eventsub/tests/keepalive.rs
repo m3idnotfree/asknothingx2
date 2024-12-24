@@ -1,27 +1,28 @@
-use asknothingx2_eventsub::twitch::ws::{Keepalive, MessageType};
+use asknothingx2_eventsub::twitch::websocket_message::{Keepalive, MessageType};
 
+#[macro_use]
 mod util;
 
 #[test]
 fn test_keepalive() {
     let test_keepalive ="{\n    \"metadata\": {\n        \"message_id\": \"84c1e79a-2a4b-4c13-ba0b-4312293e9308\",\n        \"message_type\": \"session_keepalive\",\n        \"message_timestamp\": \"2023-07-19T10:11:12.634234626Z\"\n    },\n    \"payload\": {}\n}";
 
-    let deserialized = serde_json::from_str::<Keepalive>(test_keepalive);
-    assert!(deserialized.is_ok());
-    let deserialized = deserialized.unwrap();
-    deserialized_metadata!(
-        deserialized.metadata,
+    let de = serde_json::from_str::<Keepalive>(test_keepalive);
+    assert!(de.is_ok());
+    let de = de.unwrap();
+    expected_de_metadata!(
+        de,
         "84c1e79a-2a4b-4c13-ba0b-4312293e9308",
         MessageType::SessionKeepalive,
         "2023-07-19T10:11:12.634234626Z"
     );
 
-    let serialized = serde_json::to_string(&deserialized);
-    assert!(serialized.is_ok());
-    let serialized = serialized.unwrap();
+    let se = serde_json::to_string(&de);
+    assert!(se.is_ok());
+    let se = se.unwrap();
 
-    serialized_contains!(
-        serialized,
+    se_contains!(
+        se,
         "\"message_id\":\"84c1e79a-2a4b-4c13-ba0b-4312293e9308\"",
         "\"message_type\":\"session_keepalive\"",
         "\"message_timestamp\":\"2023-07-19T10:11:12.634234626Z\"",
@@ -29,21 +30,3 @@ fn test_keepalive() {
         not = ("\"subscription_type\"", "\"subscription_version\"")
     );
 }
-
-// > git commit message
-//
-// Based on the test file content, here's an appropriate commit message:
-//
-// ```
-// test(eventsub): add keepalive message test
-//
-// Add unit test for Twitch EventSub keepalive message serialization
-// and deserialization, verifying message structure and metadata fields.
-// ```
-//
-// This follows conventional commit format with:
-// - Type: test (adding or modifying tests)
-// - Scope: eventsub (the EventSub functionality)
-// - Brief description of what was added
-// - Additional context in the body explaining what the test verifies
-//
