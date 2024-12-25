@@ -8,9 +8,9 @@ pub struct ConduitShardDisabledCondition {
 }
 
 impl ConduitShardDisabledCondition {
-    pub fn new(client_id: String) -> Self {
+    pub fn new<T: Into<String>>(client_id: T) -> Self {
         Self {
-            client_id,
+            client_id: client_id.into(),
             conduit_id: None,
         }
     }

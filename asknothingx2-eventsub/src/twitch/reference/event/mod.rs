@@ -1,2 +1,10 @@
-mod channel_follow;
-pub use channel_follow::ChannelFollowEvent;
+mod channel_follow_event;
+pub use channel_follow_event::ChannelFollowEvent;
+mod channel_raid_event;
+pub use channel_raid_event::ChannelRaidEvent;
+mod conduit_shard_disabled_event;
+pub use conduit_shard_disabled_event::ConduitShardDisabledEvent;
+mod drop_entitlement_grant_event;
+pub use drop_entitlement_grant_event::{DEGEData, DropEntitlementGrantEvent};
+mod extension_bits_transaction_event;
+pub use extension_bits_transaction_event::ExtensionBitsTransactionEvent;

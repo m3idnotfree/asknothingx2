@@ -17,4 +17,14 @@ impl DropEntitlementGrantCondition {
             campaign_id: None,
         }
     }
+
+    pub fn set_category_id<T: Into<String>>(mut self, category_id: T) -> Self {
+        self.category_id = Some(category_id.into());
+        self
+    }
+
+    pub fn set_campaign_id<T: Into<String>>(mut self, campaign_id: T) -> Self {
+        self.campaign_id = Some(campaign_id.into());
+        self
+    }
 }

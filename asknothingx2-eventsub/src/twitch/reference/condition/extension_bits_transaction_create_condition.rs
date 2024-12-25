@@ -6,9 +6,9 @@ pub struct ExtensionBitsTransactionCreateCondition {
 }
 
 impl ExtensionBitsTransactionCreateCondition {
-    pub fn new(extension_client_id: String) -> Self {
+    pub fn new<T: Into<String>>(extension_client_id: T) -> Self {
         Self {
-            extension_client_id,
+            extension_client_id: extension_client_id.into(),
         }
     }
 }
