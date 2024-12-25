@@ -1,16 +1,13 @@
 use asknothingx2_eventsub::twitch::{
     reference::{condition::Condition, transport::TransportMethod},
-    subscription_type::SubscriptionTypes,
+    subscription_types::types::SubscriptionTypes,
     websocket_message::{MessageType, Revocation},
 };
 
-#[macro_use]
-mod util;
-
 #[test]
-fn test_revocation() {
-    let test_revocation ="{\n\n    \"metadata\": {\n        \"message_id\": \"84c1e79a-2a4b-4c13-ba0b-4312293e9308\",\n        \"message_type\": \"revocation\",\n        \"message_timestamp\": \"2022-11-16T10:11:12.464757833Z\",\n        \"subscription_type\": \"channel.follow\",\n        \"subscription_version\": \"2\"\n    },\n    \"payload\": {\n        \"subscription\": {\n            \"id\": \"f1c2a387-161a-49f9-a165-0f21d7a4e1c4\",\n            \"status\": \"authorization_revoked\",\n            \"type\": \"channel.follow\",\n            \"version\": \"2\",\n            \"cost\": 1,\n            \"condition\": {\n                \"broadcaster_user_id\": \"12826\"\n            },\n            \"transport\": {\n                \"method\": \"websocket\",\n                \"session_id\": \"AQoQexAWVYKSTIu4ec_2VAxyuhAB\"\n            },\n            \"created_at\": \"2022-11-16T10:11:12.464757833Z\"\n        }\n    }\n}";
-    let de = serde_json::from_str::<Revocation<Condition>>(test_revocation);
+pub fn revocation() {
+    let payload ="{\n\n    \"metadata\": {\n        \"message_id\": \"84c1e79a-2a4b-4c13-ba0b-4312293e9308\",\n        \"message_type\": \"revocation\",\n        \"message_timestamp\": \"2022-11-16T10:11:12.464757833Z\",\n        \"subscription_type\": \"channel.follow\",\n        \"subscription_version\": \"2\"\n    },\n    \"payload\": {\n        \"subscription\": {\n            \"id\": \"f1c2a387-161a-49f9-a165-0f21d7a4e1c4\",\n            \"status\": \"authorization_revoked\",\n            \"type\": \"channel.follow\",\n            \"version\": \"2\",\n            \"cost\": 1,\n            \"condition\": {\n                \"broadcaster_user_id\": \"12826\"\n            },\n            \"transport\": {\n                \"method\": \"websocket\",\n                \"session_id\": \"AQoQexAWVYKSTIu4ec_2VAxyuhAB\"\n            },\n            \"created_at\": \"2022-11-16T10:11:12.464757833Z\"\n        }\n    }\n}";
+    let de = serde_json::from_str::<Revocation<Condition>>(payload);
     assert!(de.is_ok());
 
     let de = de.unwrap();

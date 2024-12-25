@@ -1,12 +1,9 @@
 use asknothingx2_eventsub::twitch::websocket_message::{MessageType, Reconnect};
 
-#[macro_use]
-mod util;
-
 #[test]
-fn test_reconnect() {
-    let test_reconnect = "{\n    \"metadata\": {\n        \"message_id\": \"84c1e79a-2a4b-4c13-ba0b-4312293e9308\",\n        \"message_type\": \"session_reconnect\",\n        \"message_timestamp\": \"2022-11-18T09:10:11.634234626Z\"\n    },\n    \"payload\": {\n        \"session\": {\n           \"id\": \"AQoQexAWVYKSTIu4ec_2VAxyuhAB\",\n           \"status\": \"reconnecting\",\n           \"keepalive_timeout_seconds\": null,\n           \"reconnect_url\": \"wss://eventsub.wss.twitch.tv?...\",\n           \"connected_at\": \"2022-11-16T10:11:12.634234626Z\"\n        }\n    }\n}";
-    let de = serde_json::from_str::<Reconnect>(test_reconnect);
+pub fn reconnect() {
+    let payload = "{\n    \"metadata\": {\n        \"message_id\": \"84c1e79a-2a4b-4c13-ba0b-4312293e9308\",\n        \"message_type\": \"session_reconnect\",\n        \"message_timestamp\": \"2022-11-18T09:10:11.634234626Z\"\n    },\n    \"payload\": {\n        \"session\": {\n           \"id\": \"AQoQexAWVYKSTIu4ec_2VAxyuhAB\",\n           \"status\": \"reconnecting\",\n           \"keepalive_timeout_seconds\": null,\n           \"reconnect_url\": \"wss://eventsub.wss.twitch.tv?...\",\n           \"connected_at\": \"2022-11-16T10:11:12.634234626Z\"\n        }\n    }\n}";
+    let de = serde_json::from_str::<Reconnect>(payload);
 
     assert!(de.is_ok());
 
