@@ -9,12 +9,18 @@ license = "MIT"
 keywords = ["twitch"]
 
 [features]
-default = ["types"]
-subscription-type = []
-reference = []
-types = ["subscription-type", "reference"]
+default = ["twitch"]
+twitch = ["twitch-types", "twitch-websocket-message", "twitch-payload"]
+twitch-websocket-message = ["twitch-subscription-type"]
+twitch-payload = ["twitch-reference", "twitch-subscription-type"]
+twitch-subscription-type = []
+twitch-reference = []
+twitch-types = ["twitch-subscription-type", "twitch-reference"]
 
 [dependencies]
 chrono = { version = "0.4.38", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.132"
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

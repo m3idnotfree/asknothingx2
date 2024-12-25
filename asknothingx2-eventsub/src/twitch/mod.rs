@@ -1,8 +1,12 @@
+#[macro_use]
+mod macros;
+#[cfg(feature = "twitch-payload")]
 pub mod payload;
+#[cfg(feature = "twitch-websocket-message")]
 pub mod websocket_message;
 
-#[cfg(feature = "reference")]
+#[cfg(feature = "twitch-reference")]
 pub mod reference;
 
-#[cfg(feature = "subscription-type")]
-pub mod subscription_type;
+#[cfg(feature = "twitch-subscription-type")]
+pub mod subscription_types;
