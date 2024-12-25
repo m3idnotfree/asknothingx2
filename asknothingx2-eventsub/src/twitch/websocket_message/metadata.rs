@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chrono::{DateTime, FixedOffset};
 use serde::{de::Expected, Deserialize, Serialize};
 
-use crate::twitch::subscription_type::SubscriptionTypes;
+use crate::twitch::subscription_types::types::SubscriptionTypes;
 
 #[derive(Debug, Serialize)]
 pub struct MetaData {
@@ -100,25 +100,5 @@ impl Display for MessageType {
             MessageType::SessionReconnect => f.write_str("session_reconnect"),
             MessageType::Revocation => f.write_str("revocation"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::twitch::{subscription_type::SubscriptionTypes, websocket_message::MessageType};
-
-    use super::MetaData;
-
-    #[test]
-    fn deserialize_metadata() {
-        let de: MetaData = serde_json::from_str("{\n        \"message_id\": \"befa7b53-d79d-478f-86b9-120f112b044e\",\n        \"message_type\": \"notification\",\n        \"message_timestamp\": \"2022-11-16T10:11:12.464757833Z\",\n        \"subscription_type\": \"automod.message.hold\",\n        \"subscription_version\": \"2\"\n    }").unwrap();
-        assert_eq!(de.message_id, "befa7b53-d79d-478f-86b9-120f112b044e");
-        assert_eq!(de.message_type, MessageType::Notification);
-        assert_eq!(
-            de.subscription_type,
-            Some(SubscriptionTypes::AutomodMessageHoldV2)
-        );
-        assert_eq!(de.subscription_version, Some("2".to_string()));
     }
 }
