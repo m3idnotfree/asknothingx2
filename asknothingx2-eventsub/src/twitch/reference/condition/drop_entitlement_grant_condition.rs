@@ -10,9 +10,9 @@ pub struct DropEntitlementGrantCondition {
 }
 
 impl DropEntitlementGrantCondition {
-    pub fn new(organization_id: String) -> Self {
+    pub fn new<T: Into<String>>(organization_id: T) -> Self {
         Self {
-            organization_id,
+            organization_id: organization_id.into(),
             category_id: None,
             campaign_id: None,
         }

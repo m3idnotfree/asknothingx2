@@ -87,16 +87,26 @@ pub struct DropEntitlementGrantRequest {
 }
 
 impl DropEntitlementGrantRequest {
-    pub fn new(condition: DropEntitlementGrantCondition, transport: Transport) -> Self {
+    pub fn new<T: Into<String>>(organization_id: T, transport: Transport) -> Self {
         let kind = SubscriptionTypes::DropEntitlementGrant;
         Self {
             version: kind.version().to_string(),
             kind,
-            condition,
+            condition: DropEntitlementGrantCondition::new(organization_id.into()),
             transport,
             scope: HashSet::new(),
             is_batching_enabled: "true".to_string(),
         }
+    }
+
+    pub fn set_category_id<T: Into<String>>(mut self, category_id: T) -> Self {
+        self.condition.category_id = Some(category_id.into());
+        self
+    }
+
+    pub fn set_campaign_id<T: Into<String>>(mut self, campaign_id: T) -> Self {
+        self.condition.campaign_id = Some(campaign_id.into());
+        self
     }
 
     pub fn set_require<T, L>(mut self, scopes: L) -> Self
