@@ -5,7 +5,7 @@ use http::{
     HeaderMap, HeaderName, HeaderValue,
 };
 
-use super::{CONTENT_TYPE_FORMENCODED, CONTENT_TYPE_JSON};
+use super::ContentType;
 
 #[derive(Debug)]
 pub struct HeaderBuilder {
@@ -22,19 +22,22 @@ impl HeaderBuilder {
 
     /// ACCEPT: application/json
     pub fn accept_json(mut self) -> Self {
-        self._inner.append(ACCEPT, CONTENT_TYPE_JSON());
+        self._inner
+            .append(ACCEPT, ContentType::Json.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/x-www-form-urlencoded
     pub fn content_type_formencoded(mut self) -> Self {
-        self._inner.append(CONTENT_TYPE, CONTENT_TYPE_FORMENCODED());
+        self._inner
+            .append(CONTENT_TYPE, ContentType::FormEncoded.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/json
     pub fn content_type_json(mut self) -> Self {
-        self._inner.append(CONTENT_TYPE, CONTENT_TYPE_JSON());
+        self._inner
+            .append(CONTENT_TYPE, ContentType::Json.as_header_value());
         self
     }
 
