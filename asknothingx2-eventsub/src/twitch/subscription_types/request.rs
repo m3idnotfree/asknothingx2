@@ -2,41 +2,35 @@ use std::{collections::HashSet, hash::Hash};
 
 use serde::Serialize;
 
-use crate::twitch::reference::{
-    condition::{DropEntitlementGrantCondition, IntoCondition},
-    transport::Transport,
-};
+use crate::twitch::{IntoCondition, Transport};
 
-use super::types::SubscriptionTypes;
+use super::types::SubscriptionType;
 
 pub trait IntoSubscriptionRequest: Serialize + Sized {
     fn into_body(self) -> String {
         serde_json::to_string(&self).unwrap()
     }
-    fn check_scope<T: Into<String> + Eq + Hash, L: IntoIterator<Item = T>>(&self, scope: L)
-        -> bool;
+    // fn check_scope<T: Into<String> + Eq + Hash, L: IntoIterator<Item = T>>(&self, scope: L)
+    //     -> bool;
+    // fn check_scope<T: Into<String> + Eq + Hash, L: IntoIterator<Item = T>>(
+    //     &self,
+    //     scope: L,
+    // ) -> bool {
+    //     !scope
+    //         .into_iter()
+    //         .map(Into::into)
+    //         .collect::<HashSet<String>>()
+    //         .is_disjoint(&self.scope)
+    // }
 }
 
-impl<Condition> IntoSubscriptionRequest for SubscriptionRequest<Condition>
-where
-    Condition: Serialize,
-{
-    fn check_scope<T: Into<String> + Eq + Hash, L: IntoIterator<Item = T>>(
-        &self,
-        scope: L,
-    ) -> bool {
-        !scope
-            .into_iter()
-            .map(Into::into)
-            .collect::<HashSet<String>>()
-            .is_disjoint(&self.scope)
-    }
-}
+impl<Condition> IntoSubscriptionRequest for SubscriptionRequest<Condition> where Condition: Serialize
+{}
 
 #[derive(Debug, Serialize)]
 pub struct SubscriptionRequest<Condition> {
     #[serde(rename = "type")]
-    pub kind: SubscriptionTypes,
+    pub kind: SubscriptionType,
     pub version: String,
     pub condition: Condition,
     pub transport: Transport,
@@ -47,7 +41,7 @@ impl<Condition> SubscriptionRequest<Condition>
 where
     Condition: IntoCondition,
 {
-    pub fn new(kind: SubscriptionTypes, condition: Condition, transport: Transport) -> Self {
+    pub fn new(kind: SubscriptionType, condition: Condition, transport: Transport) -> Self {
         Self {
             version: kind.version().to_string(),
             kind,
@@ -74,70 +68,3 @@ impl_de_with_subscription_type_must_have_veasion_and_condition!(
         scope: HashSet<String>
     }
 );
-
-#[derive(Debug, Serialize)]
-pub struct DropEntitlementGrantRequest {
-    #[serde(rename = "type")]
-    pub kind: SubscriptionTypes,
-    pub version: String,
-    pub condition: DropEntitlementGrantCondition,
-    pub transport: Transport,
-    pub scope: HashSet<String>,
-    pub is_batching_enabled: String,
-}
-
-impl DropEntitlementGrantRequest {
-    pub fn new<T: Into<String>>(organization_id: T, transport: Transport) -> Self {
-        let kind = SubscriptionTypes::DropEntitlementGrant;
-        Self {
-            version: kind.version().to_string(),
-            kind,
-            condition: DropEntitlementGrantCondition::new(organization_id.into()),
-            transport,
-            scope: HashSet::new(),
-            is_batching_enabled: "true".to_string(),
-        }
-    }
-
-    pub fn set_category_id<T: Into<String>>(mut self, category_id: T) -> Self {
-        self.condition.category_id = Some(category_id.into());
-        self
-    }
-
-    pub fn set_campaign_id<T: Into<String>>(mut self, campaign_id: T) -> Self {
-        self.condition.campaign_id = Some(campaign_id.into());
-        self
-    }
-
-    pub fn set_require<T, L>(mut self, scopes: L) -> Self
-    where
-        T: Into<String> + Eq + Hash,
-        L: IntoIterator<Item = T>,
-    {
-        self.scope.extend(scopes.into_iter().map(Into::into));
-
-        self
-    }
-}
-
-impl_de_without_generic_subscription_type_must_have_veasion_and_condition!(
-    DropEntitlementGrantRequest {
-        condition: DropEntitlementGrantCondition,
-        transport: Transport,
-        scope: HashSet<String>,
-        is_batching_enabled: String
-    }
-);
-
-impl IntoSubscriptionRequest for DropEntitlementGrantRequest {
-    fn check_scope<T: Into<String> + Eq + Hash, L: IntoIterator<Item = T>>(
-        &self,
-        scope: L,
-    ) -> bool {
-        !scope
-            .into_iter()
-            .map(Into::into)
-            .collect::<HashSet<String>>()
-            .is_disjoint(&self.scope)
-    }
-}

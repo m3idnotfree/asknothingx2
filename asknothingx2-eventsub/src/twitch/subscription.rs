@@ -1,9 +1,10 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 
-use crate::twitch::{
-    reference::transport::Transport, subscription_types::types::SubscriptionTypes,
-};
+use crate::twitch::{subscription_types::SubscriptionType, Transport};
+
+pub type EventPayload<C, E> = SubscriptionEventPayload<C, E>;
+pub type SinglePayload<C> = SubscriptionPayload<C>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SubscriptionPayload<Condition> {
@@ -21,7 +22,7 @@ pub struct Subscription<Condition> {
     pub id: String,
     pub status: String,
     #[serde(rename = "type")]
-    pub kind: SubscriptionTypes,
+    pub kind: SubscriptionType,
     pub version: String,
     pub cost: u64,
     pub condition: Condition,

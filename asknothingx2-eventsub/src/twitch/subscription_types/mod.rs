@@ -1,2 +1,5 @@
 pub mod request;
-pub mod types;
+mod types;
+pub use types::SubscriptionType;
+
+pub mod channel_subscriptions;

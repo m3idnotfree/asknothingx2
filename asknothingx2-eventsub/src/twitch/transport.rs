@@ -1,7 +1,7 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransportMethod {
     Webhook,
@@ -10,7 +10,7 @@ pub enum TransportMethod {
     Unknown,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Transport {
     pub method: TransportMethod,
     /// The callback URL where the notifications are sent.
@@ -82,20 +82,15 @@ impl Transport {
         }
     }
 
-    pub fn webhook<T: Into<String>>(callback: T) -> Self {
+    pub fn webhook<T: Into<String>>(callback: T, secret: Option<T>) -> Self {
         Self {
             method: TransportMethod::Webhook,
             callback: Some(callback.into()),
-            secret: None,
+            secret: secret.map(Into::into),
             session_id: None,
             conduit_id: None,
             connected_at: None,
             disconnected_at: None,
         }
-    }
-
-    pub fn set_secret<T: Into<String>>(mut self, secret: T) -> Self {
-        self.secret = Some(secret.into());
-        self
     }
 }

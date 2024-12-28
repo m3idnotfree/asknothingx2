@@ -1,12 +1,14 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 
+/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#drop-entitlement-grant-event
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DropEntitlementGrantEvent {
     pub id: String,
     pub data: DEGEData,
 }
 
+/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#drop-entitlement-grant-event
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DEGEData {
     pub organization_id: String,

@@ -1,8 +1,8 @@
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 /// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SubscriptionTypes {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum SubscriptionType {
     // Automod related
     AutomodMessageHold,
     AutomodMessageHoldV2,
@@ -126,7 +126,7 @@ pub enum SubscriptionTypes {
     WhisperReceived,
 }
 
-impl SubscriptionTypes {
+impl SubscriptionType {
     pub fn as_str(&self) -> &str {
         match self {
             Self::AutomodMessageHold => "automod.message.hold",
@@ -232,7 +232,7 @@ impl SubscriptionTypes {
     }
 }
 
-impl Serialize for SubscriptionTypes {
+impl Serialize for SubscriptionType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -241,7 +241,7 @@ impl Serialize for SubscriptionTypes {
     }
 }
 
-impl<'de> Deserialize<'de> for SubscriptionTypes {
+impl<'de> Deserialize<'de> for SubscriptionType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

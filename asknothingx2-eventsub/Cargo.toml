@@ -10,12 +10,7 @@ keywords = ["twitch"]
 
 [features]
 default = ["twitch"]
-twitch = ["twitch-types", "twitch-websocket-message", "twitch-payload"]
-twitch-websocket-message = ["twitch-subscription-type"]
-twitch-payload = ["twitch-reference", "twitch-subscription-type"]
-twitch-subscription-type = []
-twitch-reference = []
-twitch-types = ["twitch-subscription-type", "twitch-reference"]
+twitch = []
 
 [dependencies]
 chrono = { version = "0.4.38", features = ["serde"] }

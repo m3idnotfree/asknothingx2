@@ -1,5 +1,5 @@
 use asknothingx2_eventsub::twitch::{
-    subscription_types::types::SubscriptionTypes,
+    subscription_types::SubscriptionType,
     websocket_message::{MessageType, MetaData},
 };
 
@@ -14,7 +14,7 @@ pub fn deserialize_metadata() {
     );
     assert_eq!(
         de.subscription_type,
-        Some(SubscriptionTypes::AutomodMessageHoldV2)
+        Some(SubscriptionType::AutomodMessageHoldV2)
     );
     assert_eq!(de.subscription_version, Some("2".to_string()));
 }

@@ -3,15 +3,16 @@ use std::fmt::Display;
 use chrono::{DateTime, FixedOffset};
 use serde::{de::Expected, Deserialize, Serialize};
 
-use crate::twitch::subscription_types::types::SubscriptionTypes;
+use crate::twitch::subscription_types::SubscriptionType;
 
+/// https://dev.twitch.tv/docs/eventsub/websocket-reference
 #[derive(Debug, Serialize)]
 pub struct MetaData {
     pub message_id: String,
     pub message_type: MessageType,
     pub message_timestamp: DateTime<FixedOffset>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub subscription_type: Option<SubscriptionTypes>,
+    pub subscription_type: Option<SubscriptionType>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription_version: Option<String>,
 }
@@ -26,7 +27,7 @@ impl<'de> Deserialize<'de> for MetaData {
             message_id: String,
             message_type: MessageType,
             message_timestamp: DateTime<FixedOffset>,
-            subscription_type: Option<SubscriptionTypes>,
+            subscription_type: Option<SubscriptionType>,
             subscription_version: Option<String>,
         }
 
@@ -34,14 +35,14 @@ impl<'de> Deserialize<'de> for MetaData {
 
         let subscription_type = helper.subscription_type.map(|kind| {
             match (kind, helper.subscription_version.as_deref()) {
-                (SubscriptionTypes::AutomodMessageHold, Some("2")) => {
-                    SubscriptionTypes::AutomodMessageHoldV2
+                (SubscriptionType::AutomodMessageHold, Some("2")) => {
+                    SubscriptionType::AutomodMessageHoldV2
                 }
-                (SubscriptionTypes::AutomodMessageUpdate, Some("2")) => {
-                    SubscriptionTypes::AutomodMessageUpdateV2
+                (SubscriptionType::AutomodMessageUpdate, Some("2")) => {
+                    SubscriptionType::AutomodMessageUpdateV2
                 }
-                (SubscriptionTypes::ChannelModerate, Some("2")) => {
-                    SubscriptionTypes::ChannelModerateV2
+                (SubscriptionType::ChannelModerate, Some("2")) => {
+                    SubscriptionType::ChannelModerateV2
                 }
                 (kind, _) => kind,
             }
@@ -57,7 +58,7 @@ impl<'de> Deserialize<'de> for MetaData {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MessageType {
     SessionWelcome,

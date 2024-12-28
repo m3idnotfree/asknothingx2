@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+use crate::twitch::IntoCondition;
+
+/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#drop-entitlement-grant-condition
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DropEntitlementGrantCondition {
     pub organization_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -28,3 +31,5 @@ impl DropEntitlementGrantCondition {
         self
     }
 }
+
+impl IntoCondition for DropEntitlementGrantCondition {}
