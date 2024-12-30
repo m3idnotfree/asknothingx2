@@ -152,12 +152,12 @@ macro_rules! new_request {
                 )
             }
 
-            pub fn websocket<T: Into<String>>(sessin_id: T) -> Self {
+            pub fn websocket<T: Into<String>>(session_id: T) -> Self {
                 Self(
                     $crate::twitch::subscription_types::request::SubscriptionRequest::new(
                         $crate::twitch::subscription_types::types::SubscriptionTypes::$type,
                         $crate::twitch::Condition::new(),
-                        $crate::twitch::Transport::websocket(sessin_id.into()),
+                        $crate::twitch::Transport::websocket(session_id.into()),
                     ),
                 )
             }

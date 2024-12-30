@@ -34,6 +34,7 @@ pub struct SubscriptionRequest<Condition> {
     pub version: String,
     pub condition: Condition,
     pub transport: Transport,
+    #[serde(skip)]
     pub scope: HashSet<String>,
 }
 

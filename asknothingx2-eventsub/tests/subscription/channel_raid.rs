@@ -16,6 +16,9 @@ fn_expected_request!(
             "\"method\":\"webhook\"",
             "\"callback\":\"https://example.com/webhooks/callback\"",
             "\"secret\":\"s3cRe7\""
+        ],
+        not: [
+            "\"scope\":[]"
         ]
     }
 );
