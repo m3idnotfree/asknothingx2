@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 /// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/
@@ -342,5 +344,11 @@ impl<'de> Deserialize<'de> for SubscriptionType {
                 s
             ))),
         }
+    }
+}
+
+impl fmt::Display for SubscriptionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
