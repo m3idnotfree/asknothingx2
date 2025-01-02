@@ -1,6 +1,6 @@
 [package]
 name = "asknothingx2-util"
-version = "0.0.12"
+version = "0.0.13"
 authors = ["m3id"]
 edition = "2021"
 description = "asknothing"
@@ -16,8 +16,8 @@ full = ["oauth", "api", "serde"]
 
 
 [dependencies]
-http = { version = "1.1.0", optional = true }
+http = { version = "1.2.0", optional = true }
 oauth2 = { version = "4.4.2", optional = true }
-reqwest = { version = "0.12.9", optional = true, features = ["json", "rustls-tls"] }
-serde = { version = "1.0.214", optional = true }
-url = { version = "2.5.3" }
+reqwest = { version = "0.12.12", optional = true, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.217", optional = true }
+url = { version = "2.5.4" }
