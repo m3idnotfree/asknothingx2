@@ -55,3 +55,21 @@ where
         Some(v) => v.serialize(serializer),
     }
 }
+
+pub fn serialize_none_as_empty_object<S, T>(
+    value: &Option<T>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    T: Serialize,
+{
+    match value {
+        Some(v) => v.serialize(serializer),
+        None => {
+            use serde::ser::SerializeMap;
+            let map = serializer.serialize_map(Some(0))?;
+            map.end()
+        }
+    }
+}
