@@ -11,4 +11,4 @@ pub use error::Error;
 pub use header_builder::HeaderBuilder;
 
 pub use http::{HeaderMap, Method, StatusCode};
-pub use reqwest::Error as ReqwestError;
+pub use reqwest::{get, Error as ReqwestError};
