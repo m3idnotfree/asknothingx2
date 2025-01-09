@@ -36,6 +36,13 @@ where
             _phantom: PhantomData,
         }
     }
+    pub async fn from_response(response: reqwest::Response) -> Result<Self, super::Error> {
+        Ok(Self {
+            status_code: response.status(),
+            body: response.text().await?,
+            _phantom: PhantomData,
+        })
+    }
     pub fn status(&self) -> StatusCode {
         self.status_code
     }
