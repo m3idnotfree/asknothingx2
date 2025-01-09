@@ -10,7 +10,7 @@ keywords = ["asknothing", "oauth2", "http"]
 
 [features]
 oauth = ["dep:serde", "oauth2"]
-api = ["http", "reqwest"]
+api = ["http", "reqwest", "serde_json"]
 serde = ["dep:serde"]
 full = ["oauth", "api", "serde"]
 
@@ -20,5 +20,6 @@ http = { version = "1.2.0", optional = true }
 oauth2 = { version = "4.4.2", optional = true }
 reqwest = { version = "0.12.12", optional = true, features = ["json", "rustls-tls"] }
 serde = { version = "1.0.217", optional = true }
+serde_json = { version = "1.0.135", optional = true }
 thiserror = "2.0.10"
 url = { version = "2.5.4" }
