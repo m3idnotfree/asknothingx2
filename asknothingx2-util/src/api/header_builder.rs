@@ -5,7 +5,7 @@ use http::{
     HeaderMap, HeaderName, HeaderValue,
 };
 
-use super::{ContentType, Error};
+use super::ContentType;
 
 #[derive(Debug)]
 pub struct HeaderBuilder {
@@ -41,7 +41,7 @@ impl HeaderBuilder {
         self
     }
 
-    pub fn append(mut self, key: &str, value: &str) -> Result<Self, Error> {
+    pub fn append(mut self, key: &str, value: &str) -> Result<Self, http::Error> {
         self._inner
             .append(HeaderName::from_str(key)?, HeaderValue::from_str(value)?);
 

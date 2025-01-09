@@ -1,7 +1,7 @@
 use http::{header::CONTENT_TYPE, HeaderMap, Method};
 use url::Url;
 
-use super::{ContentType, Error};
+use super::ContentType;
 
 pub trait APIRequest {
     fn method(&self) -> Method;
@@ -27,7 +27,9 @@ pub fn form_urlencoded_serialize(params: Vec<(&str, &str)>) -> Vec<u8> {
         .into_bytes()
 }
 
-pub async fn api_request<T: APIRequest>(request: T) -> Result<reqwest::Response, Error> {
+pub async fn api_request<T: APIRequest>(
+    request: T,
+) -> Result<reqwest::Response, super::ReqwestError> {
     let client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .build()?;
@@ -45,7 +47,7 @@ pub async fn api_request<T: APIRequest>(request: T) -> Result<reqwest::Response,
         });
     }
 
-    Ok(request_builder.send().await?)
+    request_builder.send().await
 }
 
 #[derive(Debug)]

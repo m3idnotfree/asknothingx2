@@ -7,6 +7,8 @@ use serde::{
     Deserialize, Serialize,
 };
 
+use super::error::JsonError;
+
 #[derive(Clone)]
 pub struct APIResponse<T>
 where
@@ -41,7 +43,7 @@ where
         }
     }
 
-    pub async fn from_response(response: reqwest::Response) -> Result<Self, super::Error> {
+    pub async fn from_response(response: reqwest::Response) -> Result<Self, super::ReqwestError> {
         Ok(Self {
             status_code: response.status(),
             body: response.text().await?,
@@ -57,11 +59,10 @@ where
         &self.body
     }
 
-    pub fn into_json(self) -> Result<T, super::Error> {
+    pub fn into_json(self) -> Result<T, JsonError> {
         match self.status_code {
-            StatusCode::OK => serde_json::from_str(&self.body)
-                .map_err(|e| super::Error::DeserializationError(e.to_string())),
-            _ => Err(super::Error::ResponseError(APIError::new(
+            StatusCode::OK => Ok(serde_json::from_str(&self.body)?),
+            _ => Err(JsonError::ResponseError(APIError::new(
                 self.status(),
                 self.body,
             ))),
@@ -73,6 +74,17 @@ where
 pub struct APIError {
     status_code: StatusCode,
     message: String,
+}
+
+impl fmt::Display for APIError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "API Error ({}): {}",
+            self.status_code.as_u16(),
+            self.message
+        )
+    }
 }
 
 impl APIError {
@@ -91,9 +103,8 @@ impl APIError {
         &self.message
     }
 
-    pub fn parse_body<T: DeserializeOwned>(self) -> Result<T, super::Error> {
+    pub fn parse_body<T: DeserializeOwned>(self) -> Result<T, serde_json::Error> {
         serde_json::from_str(&self.message)
-            .map_err(|e| super::Error::DeserializationError(e.to_string()))
     }
 }
 
