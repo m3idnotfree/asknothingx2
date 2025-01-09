@@ -1,6 +1,6 @@
 [package]
 name = "asknothingx2-util"
-version = "0.0.15"
+version = "0.0.16"
 authors = ["m3id"]
 edition = "2021"
 description = "asknothing"
