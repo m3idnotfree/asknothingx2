@@ -57,7 +57,7 @@ where
         &self.body
     }
 
-    pub fn parse_body(self) -> Result<T, super::Error> {
+    pub fn into_json(self) -> Result<T, super::Error> {
         match self.status_code {
             StatusCode::OK => serde_json::from_str(&self.body)
                 .map_err(|e| super::Error::DeserializationError(e.to_string())),
