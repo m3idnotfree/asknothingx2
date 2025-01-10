@@ -1,4 +1,4 @@
-use std::{fmt, marker::PhantomData};
+use std::fmt;
 
 use bytes::Bytes;
 use http::StatusCode;
@@ -11,19 +11,12 @@ use serde::{
 use super::error::JsonError;
 
 #[derive(Clone)]
-pub struct APIResponse<T>
-where
-    T: DeserializeOwned,
-{
+pub struct APIResponse {
     status_code: StatusCode,
     body: Bytes,
-    _phantom: PhantomData<T>,
 }
 
-impl<T> fmt::Debug for APIResponse<T>
-where
-    T: DeserializeOwned,
-{
+impl fmt::Debug for APIResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("APIResponse")
             .field("status_code", &self.status_code)
@@ -32,23 +25,15 @@ where
     }
 }
 
-impl<T> APIResponse<T>
-where
-    T: DeserializeOwned,
-{
+impl APIResponse {
     pub fn new(status_code: StatusCode, body: Bytes) -> Self {
-        APIResponse {
-            status_code,
-            body,
-            _phantom: PhantomData,
-        }
+        APIResponse { status_code, body }
     }
 
     pub async fn from_response(response: reqwest::Response) -> Result<Self, super::ReqwestError> {
         Ok(Self {
             status_code: response.status(),
             body: response.bytes().await?,
-            _phantom: PhantomData,
         })
     }
 
@@ -60,7 +45,7 @@ where
         &self.body
     }
 
-    pub fn into_json(self) -> Result<T, JsonError> {
+    pub fn into_json<T: DeserializeOwned>(self) -> Result<T, JsonError> {
         match self.status_code {
             StatusCode::OK => Ok(serde_json::from_slice(&self.body)?),
             _ => Err(JsonError::ResponseError(APIError::new(
