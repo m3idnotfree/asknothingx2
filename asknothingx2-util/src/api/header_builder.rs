@@ -21,27 +21,27 @@ impl HeaderBuilder {
     }
 
     /// ACCEPT: application/json
-    pub fn accept_json(mut self) -> Self {
+    pub fn accept_json(&mut self) -> &mut Self {
         self._inner
             .append(ACCEPT, ContentType::Json.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/x-www-form-urlencoded
-    pub fn content_type_formencoded(mut self) -> Self {
+    pub fn content_type_formencoded(&mut self) -> &mut Self {
         self._inner
             .append(CONTENT_TYPE, ContentType::FormEncoded.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/json
-    pub fn content_type_json(mut self) -> Self {
+    pub fn content_type_json(&mut self) -> &mut Self {
         self._inner
             .append(CONTENT_TYPE, ContentType::Json.as_header_value());
         self
     }
 
-    pub fn append(mut self, key: &str, value: &str) -> Result<Self, http::Error> {
+    pub fn append(&mut self, key: &str, value: &str) -> Result<&mut Self, http::Error> {
         self._inner
             .append(HeaderName::from_str(key)?, HeaderValue::from_str(value)?);
 
@@ -49,7 +49,7 @@ impl HeaderBuilder {
     }
 
     /// Authorization: <type> <credentials>
-    pub fn authorization(mut self, kind: &str, credentials: &str) -> Self {
+    pub fn authorization(&mut self, kind: &str, credentials: &str) -> &mut Self {
         self._inner.append(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("{} {}", kind, credentials)).unwrap(),
@@ -58,7 +58,7 @@ impl HeaderBuilder {
     }
 
     /// Client-Id: <id>
-    pub fn client_id(mut self, id: &str) -> Self {
+    pub fn client_id(&mut self, id: &str) -> &mut Self {
         self._inner.append(
             HeaderName::from_str("Client-Id").unwrap(),
             HeaderValue::from_str(id).unwrap(),
@@ -83,7 +83,9 @@ mod test {
         let headers = HeaderBuilder::new().build();
         assert_eq!(0, headers.len());
 
-        let headers = HeaderBuilder::new().content_type_formencoded().build();
+        let mut headers = HeaderBuilder::new();
+        headers.content_type_formencoded();
+        let headers = headers.build();
         assert_eq!(1, headers.len());
         let content_type = headers.get("content-type");
         assert!(content_type.is_some());
@@ -98,10 +100,10 @@ mod test {
             Some(HeaderValue::from_str("APPLICATION/X-WWW-FORM-URLENCODED").unwrap()),
             content_type.cloned()
         );
-        let headers = HeaderBuilder::new()
-            .content_type_formencoded()
-            .accept_json()
-            .build();
+        let mut headers = HeaderBuilder::new();
+        headers.content_type_formencoded().accept_json();
+
+        let headers = headers.build();
         assert_eq!(2, headers.len());
 
         let accept = headers.get("accept");
@@ -113,11 +115,12 @@ mod test {
             accept.cloned()
         );
 
-        let headers = HeaderBuilder::new()
+        let mut headers = HeaderBuilder::new();
+        headers
             .content_type_formencoded()
             .accept_json()
-            .authorization("Oauth", "credentials")
-            .build();
+            .authorization("Oauth", "credentials");
+        let headers = headers.build();
         assert_eq!(3, headers.len());
         let authorization = headers.get("authorization");
         assert!(authorization.is_some());
