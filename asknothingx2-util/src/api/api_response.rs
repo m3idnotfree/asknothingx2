@@ -1,5 +1,6 @@
 use std::{fmt, marker::PhantomData};
 
+use bytes::Bytes;
 use http::StatusCode;
 use serde::{
     de::DeserializeOwned,
@@ -15,7 +16,7 @@ where
     T: DeserializeOwned,
 {
     status_code: StatusCode,
-    body: String,
+    body: Bytes,
     _phantom: PhantomData<T>,
 }
 
@@ -35,7 +36,7 @@ impl<T> APIResponse<T>
 where
     T: DeserializeOwned,
 {
-    pub fn new(status_code: StatusCode, body: String) -> Self {
+    pub fn new(status_code: StatusCode, body: Bytes) -> Self {
         APIResponse {
             status_code,
             body,
@@ -46,7 +47,7 @@ where
     pub async fn from_response(response: reqwest::Response) -> Result<Self, super::ReqwestError> {
         Ok(Self {
             status_code: response.status(),
-            body: response.text().await?,
+            body: response.bytes().await?,
             _phantom: PhantomData,
         })
     }
@@ -55,16 +56,16 @@ where
         self.status_code
     }
 
-    pub fn raw_body(&self) -> &str {
+    pub fn raw_body(&self) -> &Bytes {
         &self.body
     }
 
     pub fn into_json(self) -> Result<T, JsonError> {
         match self.status_code {
-            StatusCode::OK => Ok(serde_json::from_str(&self.body)?),
+            StatusCode::OK => Ok(serde_json::from_slice(&self.body)?),
             _ => Err(JsonError::ResponseError(APIError::new(
                 self.status(),
-                self.body,
+                String::from_utf8_lossy(&self.body).into_owned(),
             ))),
         }
     }
