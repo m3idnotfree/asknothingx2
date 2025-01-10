@@ -1,6 +1,6 @@
 [package]
 name = "asknothingx2-util"
-version = "0.0.27"
+version = "0.0.28"
 authors = ["m3id"]
 edition = "2021"
 description = "asknothing"
@@ -23,5 +23,5 @@ reqwest = { version = "0.12.12", optional = true, features = ["json", "rustls-tl
 serde_json = { version = "1.0.135", optional = true }
 
 serde = { version = "1.0.217", features = ["derive"] }
-thiserror = "2.0.10"
+thiserror = "2.0.11"
 url = { version = "2.5.4" }
