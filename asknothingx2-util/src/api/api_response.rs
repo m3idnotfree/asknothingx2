@@ -109,9 +109,9 @@ impl APIError {
 }
 
 #[derive(Debug)]
-pub struct EmptyArrayResponse;
+pub struct EmptyArrayBody;
 
-impl<'de> Deserialize<'de> for EmptyArrayResponse {
+impl<'de> Deserialize<'de> for EmptyArrayBody {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -119,7 +119,7 @@ impl<'de> Deserialize<'de> for EmptyArrayResponse {
         struct EmptyVisitor;
 
         impl<'de> serde::de::Visitor<'de> for EmptyVisitor {
-            type Value = EmptyArrayResponse;
+            type Value = EmptyArrayBody;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("empty array")
@@ -129,14 +129,14 @@ impl<'de> Deserialize<'de> for EmptyArrayResponse {
             where
                 A: serde::de::SeqAccess<'de>,
             {
-                Ok(EmptyArrayResponse)
+                Ok(EmptyArrayBody)
             }
         }
 
         deserializer.deserialize_seq(EmptyVisitor)
     }
 }
-impl Serialize for EmptyArrayResponse {
+impl Serialize for EmptyArrayBody {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -147,9 +147,9 @@ impl Serialize for EmptyArrayResponse {
 }
 
 #[derive(Debug)]
-pub struct EmptyObjectResponse;
+pub struct EmptyObjectBody;
 
-impl<'de> Deserialize<'de> for EmptyObjectResponse {
+impl<'de> Deserialize<'de> for EmptyObjectBody {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -157,7 +157,7 @@ impl<'de> Deserialize<'de> for EmptyObjectResponse {
         struct EmptyVisitor;
 
         impl<'de> serde::de::Visitor<'de> for EmptyVisitor {
-            type Value = EmptyObjectResponse;
+            type Value = EmptyObjectBody;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("empty object")
@@ -167,7 +167,7 @@ impl<'de> Deserialize<'de> for EmptyObjectResponse {
             where
                 A: serde::de::MapAccess<'de>,
             {
-                Ok(EmptyObjectResponse)
+                Ok(EmptyObjectBody)
             }
         }
 
@@ -175,7 +175,7 @@ impl<'de> Deserialize<'de> for EmptyObjectResponse {
     }
 }
 
-impl Serialize for EmptyObjectResponse {
+impl Serialize for EmptyObjectBody {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -186,9 +186,9 @@ impl Serialize for EmptyObjectResponse {
 }
 
 #[derive(Debug)]
-pub struct EmptyStringResponse;
+pub struct EmptyStringBody;
 
-impl<'de> Deserialize<'de> for EmptyStringResponse {
+impl<'de> Deserialize<'de> for EmptyStringBody {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -196,7 +196,7 @@ impl<'de> Deserialize<'de> for EmptyStringResponse {
         struct EmptyVisitor;
 
         impl serde::de::Visitor<'_> for EmptyVisitor {
-            type Value = EmptyStringResponse;
+            type Value = EmptyStringBody;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("empty string")
@@ -207,7 +207,7 @@ impl<'de> Deserialize<'de> for EmptyStringResponse {
                 E: serde::de::Error,
             {
                 if value.is_empty() {
-                    Ok(EmptyStringResponse)
+                    Ok(EmptyStringBody)
                 } else {
                     Err(E::custom("expected empty string"))
                 }
@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for EmptyStringResponse {
     }
 }
 
-impl Serialize for EmptyStringResponse {
+impl Serialize for EmptyStringBody {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -237,44 +237,44 @@ impl Serialize for EmptyStringResponse {
 #[cfg(test)]
 mod tests {
 
-    use crate::api::api_response::EmptyArrayResponse;
+    use crate::api::api_response::EmptyArrayBody;
 
-    use super::{EmptyObjectResponse, EmptyStringResponse};
+    use super::{EmptyObjectBody, EmptyStringBody};
 
     #[test]
     fn empty_response() {
-        let empty1 = serde_json::from_str::<EmptyStringResponse>("\"\""); // empty string
+        let empty1 = serde_json::from_str::<EmptyStringBody>("\"\""); // empty string
         assert!(empty1.is_ok());
         let empty1 = empty1.unwrap();
         let empty1 = serde_json::to_string(&empty1).unwrap();
         //assert_eq!("f", empty1);
         assert!(empty1.contains("\"\""));
 
-        let empty2 = serde_json::from_str::<EmptyObjectResponse>("{}"); // empty object
+        let empty2 = serde_json::from_str::<EmptyObjectBody>("{}"); // empty object
         assert!(empty2.is_ok());
         let empty2 = empty2.unwrap();
         let empty2 = serde_json::to_string(&empty2).unwrap();
         assert!(empty2.contains("{}"));
 
-        let empty3 = serde_json::from_str::<EmptyArrayResponse>("[]"); // empty array
+        let empty3 = serde_json::from_str::<EmptyArrayBody>("[]"); // empty array
         assert!(empty3.is_ok());
         let empty3 = empty3.unwrap();
         let empty3 = serde_json::to_string(&empty3).unwrap();
         assert!(empty3.contains("[]"));
 
-        let empty4 = serde_json::from_str::<EmptyStringResponse>(r#""""#); // quoted empty string
+        let empty4 = serde_json::from_str::<EmptyStringBody>(r#""""#); // quoted empty string
         assert!(empty4.is_ok());
         let empty4 = empty4.unwrap();
         let empty4 = serde_json::to_string(&empty4).unwrap();
         assert!(empty4.contains("\"\""));
 
-        let fail1 = serde_json::from_str::<EmptyStringResponse>("content"); // non-empty string
+        let fail1 = serde_json::from_str::<EmptyStringBody>("content"); // non-empty string
         assert!(fail1.is_err());
-        let fail2 = serde_json::from_str::<EmptyObjectResponse>("{\"k\",\"v\"}"); // non-empty object
+        let fail2 = serde_json::from_str::<EmptyObjectBody>("{\"k\",\"v\"}"); // non-empty object
         assert!(fail2.is_err());
-        let fail3 = serde_json::from_str::<EmptyArrayResponse>("[1,2,3]"); // non-empty array
+        let fail3 = serde_json::from_str::<EmptyArrayBody>("[1,2,3]"); // non-empty array
         assert!(fail3.is_err());
-        let fail3 = serde_json::from_str::<EmptyObjectResponse>(r#"{"k":"v"}"#); // non-empty object
+        let fail3 = serde_json::from_str::<EmptyObjectBody>(r#"{"k":"v"}"#); // non-empty object
         assert!(fail3.is_err());
     }
 }
