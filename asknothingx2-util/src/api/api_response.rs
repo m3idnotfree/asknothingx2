@@ -44,15 +44,12 @@ impl APIResponse {
     pub fn raw_body(&self) -> &Bytes {
         &self.body
     }
+    pub fn is_success(&self) -> bool {
+        self.status_code.is_success()
+    }
 
     pub fn into_json<T: DeserializeOwned>(self) -> Result<T, JsonError> {
-        match self.status_code {
-            StatusCode::OK => Ok(serde_json::from_slice(&self.body)?),
-            _ => Err(JsonError::ResponseError(APIError::new(
-                self.status(),
-                String::from_utf8_lossy(&self.body).into_owned(),
-            ))),
-        }
+        Ok(serde_json::from_slice(&self.body)?)
     }
 }
 
