@@ -4,7 +4,7 @@ use serde::Serialize;
 use crate::twitch::{IntoCondition, Product};
 
 new_request!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#extensionbits_transactioncreate
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#extensionbits_transactioncreate>
     ExtensionBitsTransactionRequest,
     ExtensionBitsTransactionCreate,
     ExtensionBitsTransactionCreateCondition,
@@ -14,13 +14,13 @@ new_request!(
 );
 
 new_response_payload!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#extensionbits_transactioncreate
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#extensionbits_transactioncreate>
     ExtensionBitsTransactionPayload,
     ExtensionBitsTransactionCreateCondition,
     ExtensionBitsTransactionEvent
 );
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#extension-bits-transaction-create-condition
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#extension-bits-transaction-create-condition>
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExtensionBitsTransactionCreateCondition {
     pub extension_client_id: String,
@@ -36,7 +36,7 @@ impl ExtensionBitsTransactionCreateCondition {
 
 impl IntoCondition for ExtensionBitsTransactionCreateCondition {}
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#extension-bits-transaction-create-event
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#extension-bits-transaction-create-event>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExtensionBitsTransactionEvent {
     pub extension_client_id: String,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::twitch::IntoCondition;
 new_request!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelraid
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelraid>
     ChannelRaidRequest, 
     ChannelRaid,
     ChannelRaidCondition);
@@ -26,13 +26,13 @@ impl ChannelRaidRequest {
 }
 
 new_response_payload!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelraid
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelraid>
     ChannelRaidPayload,
     ChannelRaidCondition,
     ChannelRaidEvent
 );
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-raid-condition
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-raid-condition>
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ChannelRaidCondition {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -57,7 +57,7 @@ impl ChannelRaidCondition {
 
 impl IntoCondition for ChannelRaidCondition {}
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-raid-event
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-raid-event>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelRaidEvent {
     pub from_broadcaster_user_id: String,

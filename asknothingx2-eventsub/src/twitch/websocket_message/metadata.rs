@@ -5,7 +5,7 @@ use serde::{de::Expected, Deserialize, Serialize};
 
 use crate::twitch::subscription_types::SubscriptionType;
 
-/// https://dev.twitch.tv/docs/eventsub/websocket-reference
+/// <https://dev.twitch.tv/docs/eventsub/websocket-reference>
 #[derive(Debug, Serialize)]
 pub struct MetaData {
     pub message_id: String,

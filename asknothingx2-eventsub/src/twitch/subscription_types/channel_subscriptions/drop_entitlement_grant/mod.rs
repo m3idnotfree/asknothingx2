@@ -13,7 +13,7 @@ mod event;
 pub use condition::DropEntitlementGrantCondition;
 pub use event::{DEGEData, DropEntitlementGrantEvent};
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#dropentitlementgrant
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#dropentitlementgrant>
 #[derive(Debug, Serialize)]
 pub struct DropEntitlementGrantRequest {
     #[serde(rename = "type")]
@@ -82,7 +82,7 @@ impl_de_without_generic_subscription_type_must_have_veasion_and_condition!(
 
 impl IntoSubscriptionRequest for DropEntitlementGrantRequest {}
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#dropentitlementgrant
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#dropentitlementgrant>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DropEntitlementGrantPayload {
     pub subscription: Subscription<DropEntitlementGrantCondition>,

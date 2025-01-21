@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#product
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#product>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Product {
     pub name: String,

@@ -1,4 +1,4 @@
-//! https://dev.twitch.tv/docs/eventsub/handling-websocket-events
+//! <https://dev.twitch.tv/docs/eventsub/handling-websocket-events>
 //! NOTE All timestamps are in RFC3339 format and use nanoseconds instead of milliseconds.
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
@@ -61,30 +61,30 @@ twitch_websocket_message!(
     /// unless otherwise specified when connecting.
     /// If you don’t subscribe within this timeframe,
     /// the server closes the connection.
-    /// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#welcome-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#welcome-message>
     Welcome,
     SessionPayload
 );
 
 twitch_websocket_message!(
-    /// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#keepalive-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#keepalive-message>
     Keepalive,
     /// empty object
     Value
 );
 twitch_websocket_message!(
-    /// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#reconnect-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#reconnect-message>
     Reconnect,
     SessionPayload
 );
 twitch_websocket_message!(
-/// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#revocation-message
+/// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#revocation-message>
     Revocation<Condition>,
     SubscriptionPayload
 );
 
 twitch_websocket_message!(
-    /// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#notification-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#notification-message>
     Notification<T>
 );
 

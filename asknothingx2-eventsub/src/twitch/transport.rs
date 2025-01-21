@@ -16,7 +16,7 @@ pub struct Transport {
     /// The callback URL where the notifications are sent.
     /// The URL must use the HTTPS protocol and port 443.
     /// See Processing an event.
-    /// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/#processing-an-event
+    /// <https://dev.twitch.tv/docs/eventsub/handling-webhook-events/#processing-an-event>
     ///
     /// Specify this field only if method is set to webhook.
     /// NOTE: Redirects are not followed.
@@ -27,7 +27,7 @@ pub struct Transport {
     /// and a maximum of 100 characters long.
     /// For information about how the secret is used,
     /// see Verifying the event message.
-    /// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/#verifying-the-event-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-webhook-events/#verifying-the-event-message>
     ///
     /// Specify this field only if method is set to webhook.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -35,7 +35,7 @@ pub struct Transport {
     /// An ID that identifies the WebSocket to send notifications to.
     /// When you connect to EventSub using WebSockets,
     /// the server returns the ID in the Welcome message.
-    /// https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#welcome-message
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#welcome-message>
     ///
     /// Specify this field only if method is set to websocket.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,10 +50,10 @@ pub struct Transport {
     ///
     /// This is a response-only field that
     /// Create EventSub Subscription and
-    /// https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription
+    /// <https://dev.twitch.tv/docs/api/reference/#create-eventsub-subscription>
     ///
     /// Get EventSub Subscription returns
-    /// https://dev.twitch.tv/docs/api/reference/#get-eventsub-subscriptions
+    /// <https://dev.twitch.tv/docs/api/reference/#get-eventsub-subscriptions>
     ///
     /// if the method field is set to websocket.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -62,7 +62,7 @@ pub struct Transport {
     ///
     /// This is a response-only field that
     /// Get EventSub Subscription returns
-    /// https://dev.twitch.tv/docs/api/reference/#get-eventsub-subscriptions
+    /// <https://dev.twitch.tv/docs/api/reference/#get-eventsub-subscriptions>
     ///
     /// if the method field is set to websocket.
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/>
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SubscriptionType {
     // Automod related

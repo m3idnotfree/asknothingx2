@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::twitch::Condition;
 
 new_request!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelfollow
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelfollow>
 /// channel.follow
     ChannelFollowRequest,
     ChannelFollow,
@@ -14,13 +14,13 @@ new_request!(
     }
 );
 new_response_payload!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelfollow
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelfollow>
     ChannelFollowPayload,
     Condition,
     ChannelFollowEvent
 );
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-follow-event
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#channel-follow-event>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelFollowEvent {
     pub user_id: String,

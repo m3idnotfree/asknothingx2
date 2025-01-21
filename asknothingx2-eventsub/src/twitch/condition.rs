@@ -6,7 +6,7 @@ pub trait IntoCondition: Serialize + Sized {
     }
 }
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conditions
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conditions>
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Condition {
     #[serde(skip_serializing_if = "Option::is_none")]

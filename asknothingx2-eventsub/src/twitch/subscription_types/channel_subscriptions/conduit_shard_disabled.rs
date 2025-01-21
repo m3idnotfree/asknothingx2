@@ -5,7 +5,7 @@ use crate::twitch::Transport;
 use crate::twitch::IntoCondition;
 
 new_request!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#conduitsharddisabled
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#conduitsharddisabled>
     ConduitShardDisabledRequest,
     ConduitShardDisabled,
     ConduitShardDisabledCondition,
@@ -15,13 +15,13 @@ new_request!(
 );
 
 new_response_payload!(
-/// https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#conduitsharddisabled
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#conduitsharddisabled>
     ConduitShardDisabledPayload,
     ConduitShardDisabledCondition,
     ConduitShardDisabledEvent
 );
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conduit-shard-disabled-condition
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conduit-shard-disabled-condition>
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConduitShardDisabledCondition {
     pub client_id: String,
@@ -44,7 +44,7 @@ impl ConduitShardDisabledCondition {
 
 impl IntoCondition for ConduitShardDisabledCondition {}
 
-/// https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conduit-shard-disabled-event
+/// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#conduit-shard-disabled-event>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConduitShardDisabledEvent {
     pub conduit_id: String,
