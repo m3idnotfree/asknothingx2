@@ -38,7 +38,7 @@ impl<'de> serde::Deserialize<'de> for ValidateUrl {
         D: ::serde::de::Deserializer<'de>,
     {
         struct UrlVisitor;
-        impl<'de> serde::de::Visitor<'de> for UrlVisitor {
+        impl serde::de::Visitor<'_> for UrlVisitor {
             type Value = ValidateUrl;
 
             fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
