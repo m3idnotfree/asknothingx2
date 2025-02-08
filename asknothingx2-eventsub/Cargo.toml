@@ -9,13 +9,47 @@ license = "MIT"
 keywords = ["twitch"]
 
 [features]
-default = ["twitch"]
+default = []
+route = ["tokio-tungstenite", "futures-util", "tokio"]
 twitch = []
+twitch-webhook = ["twitch", "dep:rand", "dep:hmac", "dep:sha2", "dep:hex"]
+twitch-websocket = ["twitch"]
+twitch-conduit = ["twitch"]
+twitch-bits-transaction = []
+twitch-drop-entitlement = []
+twitch-conduit-shard = []
+twitch-raid = []
+twitch-reward = []
+twitch-router = ["route", "twitch-websocket"]
 
 [dependencies]
+asknothingx2-util = { path = "../asknothingx2-util", version = "0.0.28", features = ["oauth", "api", "serde"] }
 chrono = { version = "0.4.39", features = ["serde"] }
 serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.134"
+serde_json = "1.0.138"
+thiserror = "2.0.11"
+twitch_highway = { version = "0.1.5", features = ["charity"] }
+url = "2.5.4"
+
+# webhook secret
+rand = { version = "0.9.0", optional = true }
+hmac = { version = "0.12.1", optional = true }
+sha2 = { version = "0.10.8", optional = true }
+hex = { version = "0.4.3", optional = true }
+
+# route
+tokio-tungstenite = { version = "0.26.1", features = ["rustls-tls-webpki-roots"], optional = true }
+tokio = { version = "1.43.0", features = ["sync", "rt-multi-thread", "signal", "macros", "time"], optional = true }
+futures-util = { version = "0.3.31", optional = true }
+bytes = "1.10.0"
+
+# tracing
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }
+tracing-appender = "0.2.3"
 
 [dev-dependencies]
+dotenv = "0.15.0"
 pretty_assertions = "1.4.1"
+twitch_highway = { version = "0.1.5", features = ["users", "test"] }
+twitch_oauth_token = { version = "1.1.10", features = ["full"] }
