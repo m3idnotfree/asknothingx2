@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DropEntitlementGrantEvent {
     pub id: String,
-    pub data: DEGEData,
+    pub data: Data,
 }
 
 /// <https://dev.twitch.tv/docs/eventsub/eventsub-reference/#drop-entitlement-grant-event>
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DEGEData {
+pub struct Data {
     pub organization_id: String,
     pub category_id: String,
     pub category_name: String,

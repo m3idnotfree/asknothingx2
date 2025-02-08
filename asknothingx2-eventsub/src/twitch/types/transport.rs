@@ -1,13 +1,18 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use url::Url;
+
+use super::{new_types::ConduitId, SessionId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransportMethod {
+    #[cfg(feature = "twitch-webhook")]
     Webhook,
+    #[cfg(feature = "twitch-websocket")]
     Websocket,
+    #[cfg(feature = "twitch-conduit")]
     Conduit,
-    Unknown,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -20,8 +25,9 @@ pub struct Transport {
     ///
     /// Specify this field only if method is set to webhook.
     /// NOTE: Redirects are not followed.
+    #[cfg(feature = "twitch-webhook")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub callback: Option<String>,
+    pub callback: Option<Url>,
     /// The secret used to verify the signature.
     /// The secret must be an ASCII string that’s a minimum of 10 characters long
     /// and a maximum of 100 characters long.
@@ -30,6 +36,7 @@ pub struct Transport {
     /// <https://dev.twitch.tv/docs/eventsub/handling-webhook-events/#verifying-the-event-message>
     ///
     /// Specify this field only if method is set to webhook.
+    #[cfg(feature = "twitch-webhook")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub secret: Option<String>,
     /// An ID that identifies the WebSocket to send notifications to.
@@ -38,14 +45,16 @@ pub struct Transport {
     /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#welcome-message>
     ///
     /// Specify this field only if method is set to websocket.
+    #[cfg(feature = "twitch-websocket")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_id: Option<String>,
+    pub session_id: Option<SessionId>,
     /// An ID that identifies the conduit to send notifications to.
     /// When you create a conduit, the server returns the conduit ID.
     ///
     /// Specify this field only if method is set to conduit.
+    #[cfg(feature = "twitch-conduit")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub conduit_id: Option<String>,
+    pub conduit_id: Option<ConduitId>,
     /// The UTC date and time that the WebSocket connection was established.
     ///
     /// This is a response-only field that
@@ -70,24 +79,31 @@ pub struct Transport {
 }
 
 impl Transport {
-    pub fn websocket<T: Into<String>>(session_id: T) -> Self {
+    #[cfg(feature = "twitch-websocket")]
+    pub fn websocket(session_id: SessionId) -> Self {
         Self {
             method: TransportMethod::Websocket,
+            #[cfg(feature = "twitch-webhook")]
             callback: None,
+            #[cfg(feature = "twitch-webhook")]
             secret: None,
-            session_id: Some(session_id.into()),
+            session_id: Some(session_id),
+            #[cfg(feature = "twitch-conduit")]
             conduit_id: None,
             connected_at: None,
             disconnected_at: None,
         }
     }
 
-    pub fn webhook<T: Into<String>>(callback: T, secret: Option<T>) -> Self {
+    #[cfg(feature = "twitch-webhook")]
+    pub fn webhook<T: Into<String>>(callback: Url, secret: T) -> Self {
         Self {
             method: TransportMethod::Webhook,
-            callback: Some(callback.into()),
-            secret: secret.map(Into::into),
+            callback: Some(callback),
+            secret: Some(secret.into()),
+            #[cfg(feature = "twitch-websocket")]
             session_id: None,
+            #[cfg(feature = "twitch-conduit")]
             conduit_id: None,
             connected_at: None,
             disconnected_at: None,

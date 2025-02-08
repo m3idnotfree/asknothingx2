@@ -1,21 +1,23 @@
 //! <https://dev.twitch.tv/docs/eventsub/handling-websocket-events>
 //! NOTE All timestamps are in RFC3339 format and use nanoseconds instead of milliseconds.
+use asknothingx2_util::api::EmptyObjectBody;
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
+use crate::twitch::types::payloads::SubscriptionPayload;
+
+use super::types::SessionId;
 
 mod metadata;
 
 pub use metadata::{MessageType, MetaData};
 
-use crate::twitch::subscription::SubscriptionPayload;
-
 macro_rules! twitch_websocket_message {
     (
-    $(#[$meta:meta])*
-    $name:ident,
-    $(#[$field_meta:meta])*
-    $payload:ident
+        $(#[$meta:meta])*
+        $name:ident,
+        $(#[$field_meta:meta])*
+        $payload:ident
     ) => {
         $(#[$meta])*
         #[derive(Debug, serde::Serialize)]
@@ -26,9 +28,9 @@ macro_rules! twitch_websocket_message {
         }
     };
     (
-    $(#[$meta:meta])*
-    $name:ident<$generic:ident>
-    $(#[$field_meta:meta])*
+        $(#[$meta:meta])*
+        $name:ident<$generic:ident>
+        $(#[$field_meta:meta])*
     ) => {
         $(#[$meta])*
         #[derive(Debug, serde::Serialize)]
@@ -38,12 +40,11 @@ macro_rules! twitch_websocket_message {
             pub payload: $generic,
         }
     };
-
     (
-    $(#[$meta:meta])*
-    $name:ident<$generic:ident>,
-    $(#[$field_meta:meta])*
-    $payload:ident
+        $(#[$meta:meta])*
+        $name:ident<$generic:ident>,
+        $(#[$field_meta:meta])*
+        $payload:ident
     ) => {
         $(#[$meta])*
         #[derive(Debug, serde::Serialize)]
@@ -70,7 +71,7 @@ twitch_websocket_message!(
     /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#keepalive-message>
     Keepalive,
     /// empty object
-    Value
+    EmptyObjectBody
 );
 twitch_websocket_message!(
     /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#reconnect-message>
@@ -78,8 +79,8 @@ twitch_websocket_message!(
     SessionPayload
 );
 twitch_websocket_message!(
-/// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#revocation-message>
-    Revocation<Condition>,
+    /// <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/#revocation-message>
+    Revocation,
     SubscriptionPayload
 );
 
@@ -88,7 +89,7 @@ twitch_websocket_message!(
     Notification<T>
 );
 
-macro_rules! impl_deserialize {
+macro_rules! twitch_websocket_message_deserialize {
     ($struct:ident, $name:literal, $payload:ident, $message_type:ident) => {
         impl<'de> Deserialize<'de> for $struct {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -110,25 +111,29 @@ macro_rules! impl_deserialize {
                     where
                         A: serde::de::MapAccess<'de>,
                     {
+                        #[derive(Deserialize)]
+                        #[serde(field_identifier, rename_all = "lowercase")]
+                        enum Field {
+                            Metadata,
+                            Payload,
+                        }
+
                         let mut metadata: Option<MetaData> = None;
                         let mut payload: Option<$payload> = None;
 
-                        while let Some(key) = map.next_key::<&str>()? {
+                        while let Some(key) = map.next_key::<Field>()? {
                             match key {
-                                "metadata" => {
+                                Field::Metadata => {
                                     if metadata.is_some() {
                                         return Err(Error::duplicate_field("metadata"));
                                     }
                                     metadata = Some(map.next_value()?);
                                 }
-                                "payload" => {
+                                Field::Payload => {
                                     if payload.is_some() {
                                         return Err(Error::duplicate_field("payload"));
                                     }
                                     payload = Some(map.next_value()?);
-                                }
-                                _ => {
-                                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
                                 }
                             }
                         }
@@ -153,90 +158,10 @@ macro_rules! impl_deserialize {
     };
 }
 
-impl_deserialize!(Welcome, "Welcome", SessionPayload, SessionWelcome);
-impl_deserialize!(Keepalive, "Keepalive", Value, SessionKeepalive);
-impl_deserialize!(Reconnect, "Reconnect", SessionPayload, SessionReconnect);
-
-macro_rules! impl_deserialize_websocket_message_with_subscriptionpayload {
-    ($struct:ident, $name:literal, $payload:ident, $message_type:ident) => {
-        impl<'de, T> serde::Deserialize<'de> for $struct<T>
-        where
-            T: serde::Deserialize<'de>,
-        {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                use serde::de::Error;
-                struct _Visitor<T> {
-                    _marker: std::marker::PhantomData<T>,
-                }
-
-                impl<'de, T> serde::de::Visitor<'de> for _Visitor<T>
-                where
-                    T: serde::Deserialize<'de>,
-                {
-                    type Value = $struct<T>;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                        formatter.write_str($name)
-                    }
-
-                    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-                    where
-                        A: serde::de::MapAccess<'de>,
-                    {
-                        let mut metadata: Option<MetaData> = None;
-                        let mut payload: Option<$payload<T>> = None;
-
-                        while let Some(key) = map.next_key::<&str>()? {
-                            match key {
-                                "metadata" => {
-                                    if metadata.is_some() {
-                                        return Err(Error::duplicate_field("metadata"));
-                                    }
-                                    metadata = Some(map.next_value()?);
-                                }
-                                "payload" => {
-                                    if payload.is_some() {
-                                        return Err(Error::duplicate_field("payload"));
-                                    }
-                                    payload = Some(map.next_value()?);
-                                }
-                                _ => {
-                                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
-                                }
-                            }
-                        }
-
-                        let metadata = metadata.ok_or_else(|| Error::missing_field("metadata"))?;
-                        let payload = payload.ok_or_else(|| Error::missing_field("payload"))?;
-
-                        if metadata.message_type != MessageType::$message_type {
-                            return Err(Error::invalid_type(
-                                serde::de::Unexpected::Str(&metadata.message_type.to_string()),
-                                &MessageType::$message_type,
-                            ));
-                        }
-
-                        Ok($struct { metadata, payload })
-                    }
-                }
-
-                deserializer.deserialize_map(_Visitor {
-                    _marker: std::marker::PhantomData,
-                })
-            }
-        }
-    };
-}
-
-impl_deserialize_websocket_message_with_subscriptionpayload!(
-    Revocation,
-    "Revocation",
-    SubscriptionPayload,
-    Revocation
-);
+twitch_websocket_message_deserialize!(Welcome, "Welcome", SessionPayload, SessionWelcome);
+twitch_websocket_message_deserialize!(Keepalive, "Keepalive", EmptyObjectBody, SessionKeepalive);
+twitch_websocket_message_deserialize!(Reconnect, "Reconnect", SessionPayload, SessionReconnect);
+twitch_websocket_message_deserialize!(Revocation, "Revocation", SubscriptionPayload, Revocation);
 
 impl<'de, Payload: Deserialize<'de>> Deserialize<'de> for Notification<Payload> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -260,25 +185,29 @@ impl<'de, Payload: Deserialize<'de>> Deserialize<'de> for Notification<Payload> 
             where
                 V: serde::de::MapAccess<'de>,
             {
+                #[derive(Deserialize)]
+                #[serde(field_identifier, rename_all = "lowercase")]
+                enum Field {
+                    Metadata,
+                    Payload,
+                }
+
                 let mut metadata: Option<MetaData> = None;
                 let mut payload = None;
 
-                while let Some(key) = map.next_key()? {
+                while let Some(key) = map.next_key::<Field>()? {
                     match key {
-                        "metadata" => {
+                        Field::Metadata => {
                             if metadata.is_some() {
                                 return Err(serde::de::Error::duplicate_field("metadata"));
                             }
                             metadata = Some(map.next_value()?);
                         }
-                        "payload" => {
+                        Field::Payload => {
                             if payload.is_some() {
                                 return Err(serde::de::Error::duplicate_field("payload"));
                             }
                             payload = Some(map.next_value()?);
-                        }
-                        _ => {
-                            let _ = map.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -310,7 +239,7 @@ pub struct SessionPayload {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     /// sesion_id
-    pub id: String,
+    pub id: SessionId,
     pub status: String,
     pub keepalive_timeout_seconds: Option<u64>,
     pub reconnect_url: Option<String>,
