@@ -20,7 +20,7 @@ pub trait APIRequest {
     }
 }
 
-pub fn form_urlencoded_serialize(params: Vec<(&str, &str)>) -> Vec<u8> {
+pub fn form_urlencoded_serialize(params: &[(&str, &str)]) -> Vec<u8> {
     url::form_urlencoded::Serializer::new(String::new())
         .extend_pairs(params)
         .finish()
