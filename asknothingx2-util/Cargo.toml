@@ -18,7 +18,7 @@ full = ["oauth", "api", "serde"]
 [dependencies]
 bytes = { version = "1.9.0", optional = true }
 http = { version = "1.2.0", optional = true }
-oauth2 = { version = "4.4.2", optional = true }
+oauth2 = { version = "5.0.0", optional = true }
 reqwest = { version = "0.12.12", optional = true, features = ["json", "rustls-tls"] }
 serde_json = { version = "1.0.135", optional = true }
 
