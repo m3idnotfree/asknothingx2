@@ -18,6 +18,9 @@ pub trait APIRequest {
     fn text(&self) -> Option<Vec<u8>> {
         None
     }
+    fn request_id(&self) -> Option<String> {
+        None
+    }
 }
 
 pub fn form_urlencoded_serialize(params: &[(&str, &str)]) -> Vec<u8> {
