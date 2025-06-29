@@ -23,21 +23,21 @@ impl HeaderBuilder {
     /// ACCEPT: application/json
     pub fn accept_json(&mut self) -> &mut Self {
         self._inner
-            .append(ACCEPT, ContentType::Json.as_header_value());
+            .insert(ACCEPT, ContentType::Json.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/x-www-form-urlencoded
     pub fn content_type_formencoded(&mut self) -> &mut Self {
         self._inner
-            .append(CONTENT_TYPE, ContentType::FormEncoded.as_header_value());
+            .insert(CONTENT_TYPE, ContentType::FormEncoded.as_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/json
     pub fn content_type_json(&mut self) -> &mut Self {
         self._inner
-            .append(CONTENT_TYPE, ContentType::Json.as_header_value());
+            .insert(CONTENT_TYPE, ContentType::Json.as_header_value());
         self
     }
 
@@ -50,7 +50,7 @@ impl HeaderBuilder {
 
     /// Authorization: <type> <credentials>
     pub fn authorization(&mut self, kind: &str, credentials: &str) -> &mut Self {
-        self._inner.append(
+        self._inner.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("{} {}", kind, credentials)).unwrap(),
         );
@@ -59,7 +59,7 @@ impl HeaderBuilder {
 
     /// Client-Id: <id>
     pub fn client_id(&mut self, id: &str) -> &mut Self {
-        self._inner.append(
+        self._inner.insert(
             HeaderName::from_str("Client-Id").unwrap(),
             HeaderValue::from_str(id).unwrap(),
         );
