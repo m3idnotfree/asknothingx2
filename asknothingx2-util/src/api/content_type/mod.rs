@@ -348,11 +348,15 @@ impl<'a> ParsedContentType<'a> {
             return false;
         }
 
+        if !mime_type.is_ascii() {
+            return false;
+        }
+
         let bytes = mime_type.as_bytes();
         let mut slash_pos = None;
 
         for (i, &byte) in bytes.iter().enumerate() {
-            if !is_valid_mime_byte(byte) {
+            if !is_valid_mime_token_byte(byte) {
                 return false;
             }
 
@@ -436,13 +440,15 @@ impl<'a> ParsedContentType<'a> {
 }
 
 #[inline]
-const fn is_valid_mime_byte(byte: u8) -> bool {
+const fn is_valid_mime_token_byte(byte: u8) -> bool {
     match byte {
         b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' => true,
+        b'/' | b'-' | b'.' | b'+' | b'_' => true,
+        // b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' => true,
         // Common MIME characters
-        b'/' | b'-' | b'.' | b'+' => true,
+        // b'/' | b'-' | b'.' | b'+' => true,
         // Whitespace (will be trimmed)
-        b' ' | b'\t' => true,
+        // b' ' | b'\t' => true,
         // Everything else rejected (including Unicode, control chars, symbols)
         _ => false,
     }
