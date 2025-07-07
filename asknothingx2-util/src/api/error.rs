@@ -1,15 +1,7 @@
-use super::api_response::APIError;
-
-#[derive(Debug, thiserror::Error)]
-pub enum JsonError {
-    #[error("Failed to deserialize response: {0}")]
-    DeserializationError(#[from] serde_json::Error),
-    #[error("API returned error - status {}: {}", .0.status(), .0.raw_message())]
-    ResponseError(APIError),
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
-    #[error("HTTP client already configured. Call this only once at the start of your program.")]
-    AlreadyConfigured,
+    #[error("{message}")]
+    AlreadyConfigured { message: String },
 
     #[error("Invalid proxy URL '{url}': {reason}")]
     InvalidProxyUrl {
