@@ -150,15 +150,6 @@ macro_rules! define_mime_type {
             }
         }
 
-        impl<T> PartialEq<T> for $enum_name
-        where
-            T: AsRef<str>,
-        {
-            fn eq(&self, other: &T) -> bool {
-                self.as_str().eq_ignore_ascii_case(other.as_ref())
-            }
-        }
-
         impl PartialEq<$enum_name> for String {
             fn eq(&self, other: &$enum_name) -> bool {
                 self.as_str().eq_ignore_ascii_case(other.as_str())
@@ -171,18 +162,17 @@ macro_rules! define_mime_type {
             }
         }
 
-        impl PartialEq<$enum_name> for ContentType {
-            fn eq(&self, other: &$enum_name) -> bool {
-                self.as_str().eq_ignore_ascii_case(other.as_str())
-            }
-        }
-
         impl PartialEq<ContentType> for $enum_name {
             fn eq(&self, other: &ContentType) -> bool {
                 self.as_str().eq_ignore_ascii_case(other.as_str())
             }
         }
 
+        impl AsRef<str> for $enum_name {
+            fn as_ref(&self) -> &str {
+                self.as_str()
+            }
+        }
 
         impl FromStr for $enum_name {
             type Err = ContentTypeError;
@@ -209,6 +199,7 @@ macro_rules! define_mime_type {
                 })
             }
         }
+
 
     };
 }
