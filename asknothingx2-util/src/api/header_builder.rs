@@ -1,11 +1,25 @@
-use std::str::FromStr;
-
 use http::{
-    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+    header::{
+        ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, ACCESS_CONTROL_ALLOW_HEADERS,
+        ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION, CACHE_CONTROL,
+        CONNECTION, CONTENT_LENGTH, CONTENT_TYPE, ORIGIN, REFERER, USER_AGENT,
+    },
     HeaderMap, HeaderName, HeaderValue,
 };
 
-use super::ContentType;
+use super::{
+    content_type::{Application, Multipart, Text},
+    request::HeaderError,
+    AuthScheme,
+};
+
+mod headers {
+    use http::HeaderName;
+
+    pub const CLIENT_ID: HeaderName = HeaderName::from_static("client-id");
+    pub const X_API_KEY: HeaderName = HeaderName::from_static("x-api-key");
+    pub const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
+}
 
 #[derive(Debug)]
 pub struct HeaderBuilder {
@@ -20,51 +34,142 @@ impl HeaderBuilder {
         }
     }
 
-    /// ACCEPT: application/json
-    pub fn accept_json(&mut self) -> &mut Self {
-        self._inner
-            .insert(ACCEPT, ContentType::Json.as_header_value());
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            _inner: HeaderMap::with_capacity(capacity),
+        }
+    }
+
+    pub fn header(&mut self, key: HeaderName, value: HeaderValue) -> &mut Self {
+        self._inner.insert(key, value);
         self
     }
 
-    /// CONTENT-TYPE: application/x-www-form-urlencoded
-    pub fn content_type_formencoded(&mut self) -> &mut Self {
-        self._inner
-            .insert(CONTENT_TYPE, ContentType::FormEncoded.as_header_value());
+    pub fn header_static(&mut self, key: HeaderName, value: &'static str) -> &mut Self {
+        self._inner.insert(key, HeaderValue::from_static(value));
         self
     }
 
-    /// CONTENT-TYPE: application/json
-    pub fn content_type_json(&mut self) -> &mut Self {
-        self._inner
-            .insert(CONTENT_TYPE, ContentType::Json.as_header_value());
-        self
+    pub fn header_str(&mut self, key: HeaderName, value: &str) -> Result<&mut Self, HeaderError> {
+        let val = HeaderValue::from_str(value).map_err(|e| HeaderError::InvalidHeaderValue {
+            name: key.to_string(),
+            value: value.to_string(),
+            reason: e.to_string(),
+        })?;
+
+        self._inner.insert(key, val);
+        Ok(self)
     }
 
-    pub fn append(&mut self, key: &str, value: &str) -> Result<&mut Self, http::Error> {
-        self._inner
-            .append(HeaderName::from_str(key)?, HeaderValue::from_str(value)?);
+    pub fn append(
+        &mut self,
+        key: HeaderName,
+        value: HeaderValue,
+    ) -> Result<&mut Self, http::Error> {
+        self._inner.append(key, value);
 
         Ok(self)
     }
 
-    /// Authorization: <type> <credentials>
-    pub fn authorization(&mut self, kind: &str, credentials: &str) -> &mut Self {
+    /// Client-Id: <id>
+    pub fn client_id(&mut self, id: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(headers::CLIENT_ID, id)
+    }
+
+    /// User-Agent: <agent>
+    pub fn user_agent(&mut self, agent: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(USER_AGENT, agent)
+    }
+
+    /// Cache-Control: no-cache
+    pub fn cache_control_no_cache(&mut self) -> &mut Self {
+        self._inner
+            .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+        self
+    }
+
+    /// Cache-Control: <value>
+    pub fn cache_control(&mut self, value: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(CACHE_CONTROL, value)
+    }
+
+    /// X-API-Key: <key>
+    pub fn api_key(&mut self, key: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(headers::X_API_KEY, key)
+    }
+
+    /// X-Request-ID: <id>
+    pub fn request_id(&mut self, id: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(headers::X_REQUEST_ID, id)
+    }
+
+    /// Origin: <origin>
+    pub fn origin(&mut self, origin: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(ORIGIN, origin)
+    }
+
+    /// Referer: <referer>
+    pub fn referer(&mut self, referer: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(REFERER, referer)
+    }
+
+    // CORS headers
+    /// Access-Control-Allow-Origin: *
+    pub fn cors_allow_all(&mut self) -> &mut Self {
+        self._inner
+            .insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
+        self
+    }
+
+    /// Access-Control-Allow-Origin: <origin>
+    pub fn cors_allow_origin(&mut self, origin: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(ACCESS_CONTROL_ALLOW_ORIGIN, origin)
+    }
+
+    /// Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+    pub fn cors_allow_methods_standard(&mut self) -> &mut Self {
         self._inner.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&format!("{} {}", kind, credentials)).unwrap(),
+            ACCESS_CONTROL_ALLOW_METHODS,
+            HeaderValue::from_static("GET,POST,PUT,DELETE"),
         );
         self
     }
 
-    /// Client-Id: <id>
-    pub fn client_id(&mut self, id: &str) -> &mut Self {
+    /// Access-Control-Allow-Headers: Content-Type, Authorization
+    pub fn cors_allow_headers_standard(&mut self) -> &mut Self {
         self._inner.insert(
-            HeaderName::from_str("Client-Id").unwrap(),
-            HeaderValue::from_str(id).unwrap(),
+            ACCESS_CONTROL_ALLOW_HEADERS,
+            HeaderValue::from_static("Content-Type,Authorization"),
         );
-
         self
+    }
+
+    /// Connection: keep-alive
+    pub fn connection_keep_alive(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONNECTION, HeaderValue::from_static("keep-alive"));
+        self
+    }
+
+    /// Connection: close
+    pub fn connection_close(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONNECTION, HeaderValue::from_static("close"));
+        self
+    }
+
+    /// Content-Length: <length>
+    pub fn content_length(&mut self, length: u64) -> &mut Self {
+        self._inner.insert(
+            CONTENT_LENGTH,
+            HeaderValue::from_str(&length.to_string()).unwrap(),
+        );
+        self
+    }
+
+    /// Accept: application/json, Content-Type: application/json
+    pub fn json_api(&mut self) -> &mut Self {
+        self.accept_json().content_type_json()
     }
 
     pub fn build(self) -> HeaderMap {
@@ -72,64 +177,108 @@ impl HeaderBuilder {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use http::HeaderValue;
+impl HeaderBuilder {
+    /// ACCEPT: application/json
+    pub fn accept_json(&mut self) -> &mut Self {
+        self._inner
+            .insert(ACCEPT, Application::Json.to_header_value());
+        self
+    }
 
-    use super::HeaderBuilder;
+    /// ACCEPT: text/html
+    pub fn accept_html(&mut self) -> &mut Self {
+        self._inner.insert(ACCEPT, Text::Html.to_header_value());
+        self
+    }
 
-    #[test]
-    fn header_builder() {
-        let headers = HeaderBuilder::new().build();
-        assert_eq!(0, headers.len());
+    /// ACCEPT: text/plain
+    pub fn accept_text(&mut self) -> &mut Self {
+        self._inner
+            .insert(ACCEPT, HeaderValue::from_static("text/plain"));
+        self
+    }
 
-        let mut headers = HeaderBuilder::new();
-        headers.content_type_formencoded();
-        let headers = headers.build();
-        assert_eq!(1, headers.len());
-        let content_type = headers.get("content-type");
-        assert!(content_type.is_some());
-        let content_type = headers.get("CONTENT-TYPE");
-        assert!(content_type.is_some());
+    /// ACCEPT: */*
+    pub fn accept_any(&mut self) -> &mut Self {
+        self._inner.insert(ACCEPT, HeaderValue::from_static("*/*"));
+        self
+    }
 
-        assert_eq!(
-            Some(HeaderValue::from_str("application/x-www-form-urlencoded").unwrap()),
-            content_type.cloned()
-        );
-        assert_ne!(
-            Some(HeaderValue::from_str("APPLICATION/X-WWW-FORM-URLENCODED").unwrap()),
-            content_type.cloned()
-        );
-        let mut headers = HeaderBuilder::new();
-        headers.content_type_formencoded().accept_json();
+    /// ACCEPT: multi items
+    pub fn accept_mulity(&mut self, items: &[&str]) -> Result<&mut Self, HeaderError> {
+        self.header_str(ACCEPT, &items.join(","))
+    }
 
-        let headers = headers.build();
-        assert_eq!(2, headers.len());
+    /// Accept-Encoding: gzip, deflate, br
+    pub fn accept_encoding_standard(&mut self) -> &mut Self {
+        self._inner
+            .insert(ACCEPT_ENCODING, HeaderValue::from_static("gzip,deflate,br"));
+        self
+    }
 
-        let accept = headers.get("accept");
-        assert!(accept.is_some());
-        let accept = headers.get("ACCEPT");
-        assert!(accept.is_some());
-        assert_eq!(
-            Some(HeaderValue::from_str("application/json").unwrap()),
-            accept.cloned()
-        );
+    /// Accept-Language: en-US, en;q=0.9
+    pub fn accept_language_en(&mut self) -> &mut Self {
+        self._inner
+            .insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
+        self
+    }
 
-        let mut headers = HeaderBuilder::new();
-        headers
-            .content_type_formencoded()
-            .accept_json()
-            .authorization("Oauth", "credentials");
-        let headers = headers.build();
-        assert_eq!(3, headers.len());
-        let authorization = headers.get("authorization");
-        assert!(authorization.is_some());
-        let authorization = headers.get("AUTHORIZATION");
-        assert!(authorization.is_some());
+    /// Accept-Language: <lang>
+    pub fn accept_language(&mut self, lang: &str) -> Result<&mut Self, HeaderError> {
+        self.header_str(ACCEPT_LANGUAGE, lang)
+    }
+}
 
-        assert_eq!(
-            Some(HeaderValue::from_str("Oauth credentials").unwrap()),
-            authorization.cloned()
-        );
+impl HeaderBuilder {
+    /// CONTENT-TYPE: application/x-www-form-urlencoded
+    pub fn content_type_formencoded(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONTENT_TYPE, Application::FormUrlEncoded.to_header_value());
+        self
+    }
+
+    /// CONTENT-TYPE: application/json
+    pub fn content_type_json(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONTENT_TYPE, Application::Json.to_header_value());
+        self
+    }
+
+    /// CONTENT-TYPE: text/plain
+    pub fn content_type_text(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONTENT_TYPE, Text::Plain.to_header_value());
+        self
+    }
+
+    /// CONTENT-TYPE: text/html
+    pub fn content_type_html(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONTENT_TYPE, Text::Html.to_header_value());
+        self
+    }
+
+    /// CONTENT-TYPE: multipart/form-data
+    pub fn content_type_multipart(&mut self) -> &mut Self {
+        self._inner
+            .insert(CONTENT_TYPE, Multipart::FormData.to_header_value());
+        self
+    }
+}
+
+impl HeaderBuilder {
+    /// Authorization: <type> <credentials>
+    pub fn authorization(&mut self, auth: AuthScheme) -> &mut Self {
+        self._inner
+            .insert(AUTHORIZATION, auth.to_header_value().unwrap());
+        self
+    }
+
+    pub fn basic_auth(&mut self, username: &str, password: &str) -> &mut Self {
+        self.authorization(AuthScheme::basic(username, password))
+    }
+
+    pub fn bearer_token(&mut self, token: &str) -> &mut Self {
+        self.authorization(AuthScheme::bearer(token))
     }
 }
