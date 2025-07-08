@@ -10,7 +10,7 @@ keywords = ["asknothing", "oauth2", "http"]
 
 [features]
 oauth = ["oauth2", "url"]
-api = ["bytes", "http", "reqwest", "url", "serde_json", "serde_urlencoded", "tracing"]
+api = ["bytes", "http", "reqwest", "url", "serde_json", "serde_urlencoded", "tracing", "base64"]
 serde = []
 full = ["oauth", "api"]
 stream = ["dep:tokio", "tokio-util", "futures-util"]
@@ -25,6 +25,7 @@ serde_json = { version = "1.0.140", optional = true }
 serde_urlencoded = { version = "0.7.1", optional = true }
 url = { version = "2.5.4", optional = true }
 tracing = { version = "0.1.41", optional = true }
+base64 = { version = "0.22.1", optional = true }
 
 tokio = { version = "1.45.1", features = ["fs", "process"], optional = true }
 tokio-util = { version = "0.7.15", features = ["io"], optional = true }

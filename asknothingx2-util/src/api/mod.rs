@@ -3,11 +3,13 @@ pub mod request;
 pub mod setup;
 
 mod api_response;
+mod auth_scheme;
 mod config;
 mod error;
 mod header_builder;
 
 pub use api_response::{APIError, APIResponse, EmptyArrayBody, EmptyObjectBody, EmptyStringBody};
+pub use auth_scheme::{AuthError, AuthScheme, DigestBuilder, SCRAMVariant};
 pub use config::{AppType, Config};
 pub use error::ConfigError;
 pub use header_builder::HeaderBuilder;
