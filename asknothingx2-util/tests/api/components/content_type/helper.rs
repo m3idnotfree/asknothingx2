@@ -1,9 +1,15 @@
-use convert_case::Case;
 use proptest::{
     prelude::{Just, Strategy},
     prop_compose, prop_oneof,
     sample::select,
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum Case {
+    Lower,
+    Upper,
+    Title,
+}
 
 prop_compose! {
     pub fn whitespace_variations()(
@@ -19,7 +25,7 @@ prop_compose! {
             Just(Case::Lower),
             Just(Case::Upper),
             Just(Case::Title),
-    ]) -> Case<'static> { s }
+    ]) -> Case { s }
 }
 
 pub fn case_convertion(mime_type: &str, case: Case) -> String {

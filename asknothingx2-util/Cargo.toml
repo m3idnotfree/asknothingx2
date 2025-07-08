@@ -36,7 +36,6 @@ thiserror = "2.0.12"
 percent-encoding = "2.3.1"
 
 [dev-dependencies]
-convert_case = "0.8.0"
 proptest = "1.7.0"
 rand = "0.9.1"
 tokio = { version = "1.45.1", features = ["full"] }

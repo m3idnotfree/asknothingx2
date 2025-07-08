@@ -243,10 +243,7 @@ impl Config {
             ),
         );
         headers.insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.5"));
-        headers.insert(
-            ACCEPT_ENCODING,
-            HeaderValue::from_static("gzip, deflate, br"),
-        );
+        headers.insert(ACCEPT_ENCODING, HeaderValue::from_static("gzip,deflate,br"));
         headers.insert(custom_headers::DNT, HeaderValue::from_static("1"));
         headers.insert(CONNECTION, HeaderValue::from_static("keep-alive"));
         headers.insert(

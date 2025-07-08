@@ -13,7 +13,7 @@ pub use error::ConfigError;
 pub use header_builder::HeaderBuilder;
 
 // Re-export
-pub use http::{HeaderMap, Method, StatusCode};
+pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
 pub use reqwest::{Client, Error as ReqwestError, RequestBuilder};
 
 use setup::get_global_client_or_default;
