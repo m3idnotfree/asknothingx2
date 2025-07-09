@@ -17,6 +17,7 @@ use url::Url;
 use super::{
     content_type::{Application, Text},
     setup::get_global_client_or_default,
+    HeaderMut,
 };
 
 /// Characters that must be percent-encoded in HTTP header values
@@ -262,6 +263,10 @@ impl RequestParts {
     pub fn headers(mut self, headers: HeaderMap) -> Self {
         self.headers.extend(headers);
         self
+    }
+
+    pub fn header_mut(&mut self) -> HeaderMut<'_> {
+        HeaderMut::new(&mut self.headers)
     }
 
     pub fn body(mut self, body: RequestBody) -> Self {
