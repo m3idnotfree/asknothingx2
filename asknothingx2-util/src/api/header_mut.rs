@@ -7,13 +7,14 @@ use http::{
     HeaderMap, HeaderName, HeaderValue,
 };
 
-use super::{
+use crate::api::{
     content_type::{Application, Multipart, Text},
-    request::HeaderError,
     AuthScheme,
 };
 
-mod headers {
+use super::request::HeaderError;
+
+pub mod headers {
     use http::HeaderName;
 
     pub const CLIENT_ID: HeaderName = HeaderName::from_static("client-id");
@@ -21,32 +22,22 @@ mod headers {
     pub const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 }
 
-#[derive(Debug)]
-pub struct HeaderBuilder {
-    _inner: HeaderMap,
+pub struct HeaderMut<'a> {
+    header: &'a mut HeaderMap,
 }
 
-#[allow(clippy::new_without_default)]
-impl HeaderBuilder {
-    pub fn new() -> Self {
-        Self {
-            _inner: HeaderMap::new(),
-        }
-    }
-
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            _inner: HeaderMap::with_capacity(capacity),
-        }
+impl<'a> HeaderMut<'a> {
+    pub fn new(header: &'a mut HeaderMap) -> Self {
+        Self { header }
     }
 
     pub fn header(&mut self, key: HeaderName, value: HeaderValue) -> &mut Self {
-        self._inner.insert(key, value);
+        self.header.insert(key, value);
         self
     }
 
     pub fn header_static(&mut self, key: HeaderName, value: &'static str) -> &mut Self {
-        self._inner.insert(key, HeaderValue::from_static(value));
+        self.header.insert(key, HeaderValue::from_static(value));
         self
     }
 
@@ -57,7 +48,7 @@ impl HeaderBuilder {
             reason: e.to_string(),
         })?;
 
-        self._inner.insert(key, val);
+        self.header.insert(key, val);
         Ok(self)
     }
 
@@ -66,9 +57,19 @@ impl HeaderBuilder {
         key: HeaderName,
         value: HeaderValue,
     ) -> Result<&mut Self, http::Error> {
-        self._inner.append(key, value);
+        self.header.append(key, value);
 
         Ok(self)
+    }
+
+    pub fn extend(&mut self, headers: HeaderMap) -> &mut Self {
+        self.header.extend(headers);
+
+        self
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.header.is_empty()
     }
 
     /// Client-Id: <id>
@@ -83,7 +84,7 @@ impl HeaderBuilder {
 
     /// Cache-Control: no-cache
     pub fn cache_control_no_cache(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
         self
     }
@@ -116,7 +117,7 @@ impl HeaderBuilder {
     // CORS headers
     /// Access-Control-Allow-Origin: *
     pub fn cors_allow_all(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"));
         self
     }
@@ -128,7 +129,7 @@ impl HeaderBuilder {
 
     /// Access-Control-Allow-Methods: GET, POST, PUT, DELETE
     pub fn cors_allow_methods_standard(&mut self) -> &mut Self {
-        self._inner.insert(
+        self.header.insert(
             ACCESS_CONTROL_ALLOW_METHODS,
             HeaderValue::from_static("GET,POST,PUT,DELETE"),
         );
@@ -137,7 +138,7 @@ impl HeaderBuilder {
 
     /// Access-Control-Allow-Headers: Content-Type, Authorization
     pub fn cors_allow_headers_standard(&mut self) -> &mut Self {
-        self._inner.insert(
+        self.header.insert(
             ACCESS_CONTROL_ALLOW_HEADERS,
             HeaderValue::from_static("Content-Type,Authorization"),
         );
@@ -146,21 +147,21 @@ impl HeaderBuilder {
 
     /// Connection: keep-alive
     pub fn connection_keep_alive(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONNECTION, HeaderValue::from_static("keep-alive"));
         self
     }
 
     /// Connection: close
     pub fn connection_close(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONNECTION, HeaderValue::from_static("close"));
         self
     }
 
     /// Content-Length: <length>
     pub fn content_length(&mut self, length: u64) -> &mut Self {
-        self._inner.insert(
+        self.header.insert(
             CONTENT_LENGTH,
             HeaderValue::from_str(&length.to_string()).unwrap(),
         );
@@ -172,35 +173,35 @@ impl HeaderBuilder {
         self.accept_json().content_type_json()
     }
 
-    pub fn build(self) -> HeaderMap {
-        self._inner
-    }
+    // pub fn build(self) -> HeaderMap {
+    //     self.header
+    // }
 }
 
-impl HeaderBuilder {
+impl<'a> HeaderMut<'a> {
     /// ACCEPT: application/json
     pub fn accept_json(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(ACCEPT, Application::Json.to_header_value());
         self
     }
 
     /// ACCEPT: text/html
     pub fn accept_html(&mut self) -> &mut Self {
-        self._inner.insert(ACCEPT, Text::Html.to_header_value());
+        self.header.insert(ACCEPT, Text::Html.to_header_value());
         self
     }
 
     /// ACCEPT: text/plain
     pub fn accept_text(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(ACCEPT, HeaderValue::from_static("text/plain"));
         self
     }
 
     /// ACCEPT: */*
     pub fn accept_any(&mut self) -> &mut Self {
-        self._inner.insert(ACCEPT, HeaderValue::from_static("*/*"));
+        self.header.insert(ACCEPT, HeaderValue::from_static("*/*"));
         self
     }
 
@@ -211,14 +212,14 @@ impl HeaderBuilder {
 
     /// Accept-Encoding: gzip, deflate, br
     pub fn accept_encoding_standard(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(ACCEPT_ENCODING, HeaderValue::from_static("gzip,deflate,br"));
         self
     }
 
     /// Accept-Language: en-US, en;q=0.9
     pub fn accept_language_en(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(ACCEPT_LANGUAGE, HeaderValue::from_static("en-US,en;q=0.9"));
         self
     }
@@ -229,47 +230,47 @@ impl HeaderBuilder {
     }
 }
 
-impl HeaderBuilder {
+impl<'a> HeaderMut<'a> {
     /// CONTENT-TYPE: application/x-www-form-urlencoded
     pub fn content_type_formencoded(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONTENT_TYPE, Application::FormUrlEncoded.to_header_value());
         self
     }
 
     /// CONTENT-TYPE: application/json
     pub fn content_type_json(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONTENT_TYPE, Application::Json.to_header_value());
         self
     }
 
     /// CONTENT-TYPE: text/plain
     pub fn content_type_text(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONTENT_TYPE, Text::Plain.to_header_value());
         self
     }
 
     /// CONTENT-TYPE: text/html
     pub fn content_type_html(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONTENT_TYPE, Text::Html.to_header_value());
         self
     }
 
     /// CONTENT-TYPE: multipart/form-data
     pub fn content_type_multipart(&mut self) -> &mut Self {
-        self._inner
+        self.header
             .insert(CONTENT_TYPE, Multipart::FormData.to_header_value());
         self
     }
 }
 
-impl HeaderBuilder {
+impl<'a> HeaderMut<'a> {
     /// Authorization: <type> <credentials>
     pub fn authorization(&mut self, auth: AuthScheme) -> &mut Self {
-        self._inner
+        self.header
             .insert(AUTHORIZATION, auth.to_header_value().unwrap());
         self
     }

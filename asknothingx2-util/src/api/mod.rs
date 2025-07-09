@@ -5,12 +5,12 @@ pub mod setup;
 mod auth_scheme;
 mod config;
 mod error;
-mod header_builder;
+mod header_mut;
 
 pub use auth_scheme::{AuthError, AuthScheme, DigestBuilder, SCRAMVariant};
 pub use config::{AppType, Config};
 pub use error::ConfigError;
-pub use header_builder::HeaderBuilder;
+pub use header_mut::HeaderMut;
 
 // Re-export
 pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
