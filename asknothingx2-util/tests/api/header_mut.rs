@@ -62,7 +62,6 @@ fn test_header_str_invalid() {
     let mut headers = HeaderMap::new();
     let custom_header = HeaderName::from_static("x-custom");
 
-    // Test with invalid header value (contains null byte)
     if let Err(HeaderError::InvalidHeaderValue {
         name,
         value,
@@ -84,22 +83,22 @@ fn test_append() {
     let value2 = HeaderValue::from_static("value2");
 
     HeaderMut::new(&mut headers).header(custom_header.clone(), value1);
-    HeaderMut::new(&mut headers).append(custom_header.clone(), value2);
-    // let result = builder.append(custom_header.clone(), value2);
-    // assert!(result.is_ok());
+    HeaderMut::new(&mut headers)
+        .append(custom_header.clone(), value2)
+        .unwrap();
 
-    // let headers = builder.build();
     let values: Vec<_> = headers.get_all(&custom_header).iter().collect();
     assert_eq!(values.len(), 2);
     assert_eq!(values[0], "value1");
     assert_eq!(values[1], "value2");
 }
 
-// Test specific header methods
 #[test]
 fn test_client_id() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).client_id("test-client-123");
+    assert!(HeaderMut::new(&mut headers)
+        .client_id("test-client-123")
+        .is_ok());
 
     assert_eq!(headers.get("client-id").unwrap(), "test-client-123");
 }
@@ -107,7 +106,9 @@ fn test_client_id() {
 #[test]
 fn test_user_agent() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).user_agent("MyApp/1.0");
+    HeaderMut::new(&mut headers)
+        .user_agent("MyApp/1.0")
+        .unwrap();
 
     assert_eq!(headers.get(USER_AGENT).unwrap(), "MyApp/1.0");
 }
@@ -123,7 +124,9 @@ fn test_cache_control_no_cache() {
 #[test]
 fn test_cache_control_custom() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).cache_control("max-age=3600");
+    HeaderMut::new(&mut headers)
+        .cache_control("max-age=3600")
+        .unwrap();
 
     assert_eq!(headers.get(CACHE_CONTROL).unwrap(), "max-age=3600");
 }
@@ -157,7 +160,9 @@ fn test_api_key_invalid() {
 #[test]
 fn test_request_id() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).request_id("req-123-456");
+    HeaderMut::new(&mut headers)
+        .request_id("req-123-456")
+        .unwrap();
 
     assert_eq!(headers.get("x-request-id").unwrap(), "req-123-456");
 }
@@ -191,7 +196,9 @@ fn test_origin_invalid() {
 #[test]
 fn test_referer() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).referer("https://referrer.com");
+    HeaderMut::new(&mut headers)
+        .referer("https://referrer.com")
+        .unwrap();
 
     assert_eq!(headers.get(REFERER).unwrap(), "https://referrer.com");
 }
@@ -204,7 +211,6 @@ fn test_referer_invalid() {
         .is_err());
 }
 
-// Test CORS methods
 #[test]
 fn test_cors_allow_all() {
     let mut headers = HeaderMap::new();
@@ -216,7 +222,9 @@ fn test_cors_allow_all() {
 #[test]
 fn test_cors_allow_origin() {
     let mut headers = HeaderMap::new();
-    HeaderMut::new(&mut headers).cors_allow_origin("https://trusted.com");
+    HeaderMut::new(&mut headers)
+        .cors_allow_origin("https://trusted.com")
+        .unwrap();
 
     assert_eq!(
         headers.get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
@@ -254,7 +262,6 @@ fn test_cors_allow_headers_standard() {
     );
 }
 
-// Test connection methods
 #[test]
 fn test_connection_keep_alive() {
     let mut headers = HeaderMap::new();
@@ -279,7 +286,6 @@ fn test_content_length() {
     assert_eq!(headers.get(CONTENT_LENGTH).unwrap(), "1024");
 }
 
-// Test combination methods
 #[test]
 fn test_json_api() {
     let mut headers = HeaderMap::new();
@@ -289,7 +295,6 @@ fn test_json_api() {
     assert_eq!(headers.get(CONTENT_TYPE).unwrap(), "application/json");
 }
 
-// Test accept methods
 #[test]
 fn test_accept_json() {
     let mut headers = HeaderMap::new();
@@ -356,7 +361,6 @@ fn test_accept_language_invalid() {
         .is_err());
 }
 
-// Test content-type methods
 #[test]
 fn test_content_type_formencoded() {
     let mut headers = HeaderMap::new();
@@ -400,7 +404,6 @@ fn test_content_type_multipart() {
     assert_eq!(headers.get(CONTENT_TYPE).unwrap(), "multipart/form-data");
 }
 
-// Test authorization methods
 #[test]
 fn test_basic_auth() {
     let mut headers = HeaderMap::new();
@@ -430,7 +433,6 @@ fn test_authorization_custom() {
     assert_eq!(headers.get(AUTHORIZATION).unwrap(), "Custom credential");
 }
 
-// Test method chaining
 #[test]
 fn test_method_chaining() {
     let mut headers = HeaderMap::new();
@@ -454,7 +456,6 @@ fn test_method_chaining() {
     assert_eq!(headers.get(AUTHORIZATION).unwrap(), "Basic dXNlcjpwYXNz");
 }
 
-// Test error propagation in chaining
 #[test]
 fn test_error_in_chain() {
     let mut headers = HeaderMap::new();
@@ -465,7 +466,6 @@ fn test_error_in_chain() {
         .is_err());
 }
 
-// Test header replacement
 #[test]
 fn test_header_replacement() {
     let mut headers = HeaderMap::new();
@@ -475,7 +475,6 @@ fn test_header_replacement() {
     assert_eq!(headers.get(USER_AGENT).unwrap(), "Second");
 }
 
-// Test multiple different headers
 #[test]
 fn test_multiple_headers() {
     let mut headers = HeaderMap::new();
@@ -505,7 +504,6 @@ fn test_multiple_headers() {
     assert_eq!(headers.len(), 7);
 }
 
-// Test edge cases
 #[test]
 fn test_empty_values() {
     let mut headers = HeaderMap::new();
@@ -524,11 +522,9 @@ fn test_empty_values() {
 #[test]
 fn test_unicode_values() {
     let mut headers = HeaderMap::new();
-    // Note: HTTP headers should be ASCII, but let's test the builder's behavior
     assert!(HeaderMut::new(&mut headers)
         .header_str(HeaderName::from_static("x-test"), "café")
         .is_ok());
-    // This should succeed as "café" contains valid UTF-8 that's also valid for HTTP headers
 }
 
 #[test]
@@ -552,12 +548,10 @@ fn test_large_header_count() {
             .to_str()
             .unwrap()
             .to_string();
-        // assert_eq!(headers.get(&header_name).unwrap(), expected_value);
         assert_eq!(header_value, expected_value);
     }
 }
 
-// Additional tests for AuthScheme integration
 #[cfg(test)]
 mod auth_scheme_tests {
     use asknothingx2_util::api::{AuthScheme, DigestBuilder, HeaderMut, SCRAMVariant};

@@ -72,7 +72,8 @@ fn test_request_parts_edge_cases() {
 fn test_header_edge_cases() {
     let url = Url::parse("https://example.com").unwrap();
 
-    let parts = RequestParts::new(Method::GET, url)
+    let mut parts = RequestParts::new(Method::GET, url);
+    parts
         .header("Empty-Value", "")
         .header("Numeric-Value", "12345")
         .header("Special-Chars", "!@#$%^&*()")

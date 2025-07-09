@@ -374,7 +374,8 @@ fn test_request_parts_construction() {
 #[test]
 fn test_request_parts_headers() {
     let url = Url::parse("https://example.com/api").unwrap();
-    let parts = RequestParts::new(Method::GET, url)
+    let mut parts = RequestParts::new(Method::GET, url);
+    parts
         .header("Content-Type", "application/json")
         .header("Authorization", "Bearer token123")
         .header("User-Agent", "test-client/1.0");
@@ -394,46 +395,51 @@ fn test_request_parts_headers() {
 fn test_request_parts_try_header() {
     let url = Url::parse("https://example.com/api").unwrap();
 
-    let result =
-        RequestParts::new(Method::GET, url.clone()).try_header("Content-Type", "application/json");
-    assert!(result.is_ok());
+    let mut result = RequestParts::new(Method::GET, url.clone());
+    assert!(result
+        .try_header("Content-Type", "application/json")
+        .is_ok());
 
-    let result = RequestParts::new(Method::GET, url.clone()).try_header("Invalid Name", "value");
-    assert!(result.is_err());
+    let mut result = RequestParts::new(Method::GET, url.clone());
+    assert!(result.try_header("Invalid Name", "value").is_err());
 
-    let result = RequestParts::new(Method::GET, url).try_header("Valid-Name", "invalid\nvalue");
-    assert!(result.is_err());
+    let mut result = RequestParts::new(Method::GET, url);
+    assert!(result.try_header("Valid-Name", "invalid\nvalue").is_err());
 }
 
 #[test]
 fn test_request_parts_body_methods() {
     let url = Url::parse("https://example.com/api").unwrap();
 
-    let parts = RequestParts::new(Method::POST, url.clone()).text("Hello, world!");
+    let mut parts = RequestParts::new(Method::POST, url.clone());
+    parts.text("Hello, world!");
     assert!(parts.body.is_some());
     assert!(parts.headers.contains_key("content-type"));
 
-    let parts = RequestParts::new(Method::POST, url.clone()).json(json!({"key": "value"}));
+    let mut parts = RequestParts::new(Method::POST, url.clone());
+    parts.json(json!({"key": "value"}));
     assert!(parts.body.is_some());
     assert!(parts.headers.contains_key("content-type"));
 
-    let parts = RequestParts::new(Method::POST, url.clone())
-        .form(vec![("key".to_string(), "value".to_string())]);
+    let mut parts = RequestParts::new(Method::POST, url.clone());
+    parts.form(vec![("key".to_string(), "value".to_string())]);
     assert!(parts.body.is_some());
     assert!(parts.headers.contains_key("content-type"));
 
-    let parts = RequestParts::new(Method::POST, url.clone())
-        .form_pairs([("key1", "value1"), ("key2", "value2")]);
+    let mut parts = RequestParts::new(Method::POST, url.clone());
+    parts.form_pairs([("key1", "value1"), ("key2", "value2")]);
     assert!(parts.body.is_some());
 
-    let parts = RequestParts::new(Method::POST, url).empty();
+    let mut parts = RequestParts::new(Method::POST, url);
+    parts.empty();
     assert!(parts.body.is_some());
 }
 
 #[test]
 fn test_request_parts_configuration() {
     let url = Url::parse("https://example.com/api").unwrap();
-    let parts = RequestParts::new(Method::GET, url)
+    let mut parts = RequestParts::new(Method::GET, url);
+    parts
         .version(http::Version::HTTP_2)
         .timeout(Duration::from_secs(30))
         .request_id("req-123");
@@ -448,8 +454,10 @@ fn test_request_parts_into_request_builder() {
     let url = Url::parse("https://example.com/api").unwrap();
     let client = Client::new();
 
-    let parts = RequestParts::new(Method::POST, url)
-        .header("Content-Type", "application/json")
+    let mut parts = RequestParts::new(Method::POST, url);
+    parts.header_mut().content_type_json();
+
+    parts
         .json(json!({"test": "data"}))
         .timeout(Duration::from_secs(10))
         .request_id("test-request");
@@ -488,7 +496,7 @@ fn test_encode_header() {
     assert!(result.contains("%22"));
 
     let result = encode_header("世界");
-    assert!(result.len() > 2); // Should be percent-encoded
+    assert!(result.len() > 2);
 }
 
 #[test]

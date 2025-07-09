@@ -13,7 +13,7 @@ use url::Url;
 #[derive(Debug)]
 struct RequestPartsBodyTestCase {
     name: &'static str,
-    body_setter: fn(RequestParts) -> RequestParts,
+    body_setter: fn(&mut RequestParts) -> &mut RequestParts,
     expected_body_variant: &'static str,
     expected_content_type: Option<&'static str>,
 }
@@ -56,8 +56,8 @@ fn test_request_parts_body_methods_table_driven() {
     ];
 
     for case in test_cases {
-        let request_parts = RequestParts::new(Method::POST, url.clone());
-        let request_parts = (case.body_setter)(request_parts);
+        let mut request_parts = RequestParts::new(Method::POST, url.clone());
+        let request_parts = (case.body_setter)(&mut request_parts);
 
         if let Some(body) = &request_parts.body {
             let debug_str = format!("{body:?}",);
@@ -90,7 +90,7 @@ fn test_request_parts_body_methods_table_driven() {
 #[derive(Debug)]
 struct RequestPartsConfigTestCase {
     name: &'static str,
-    configurator: fn(RequestParts) -> RequestParts,
+    configurator: fn(&mut RequestParts) -> &mut RequestParts,
     expected_timeout: Option<Duration>,
     expected_version: Option<http::Version>,
     expected_request_id: Option<&'static str>,
@@ -137,8 +137,8 @@ fn test_request_parts_configuration_table_driven() {
     ];
 
     for case in test_cases {
-        let request_parts = RequestParts::new(Method::GET, url.clone());
-        let request_parts = (case.configurator)(request_parts);
+        let mut request_parts = RequestParts::new(Method::GET, url.clone());
+        let request_parts = (case.configurator)(&mut request_parts);
 
         assert_eq!(
             request_parts.timeout, case.expected_timeout,

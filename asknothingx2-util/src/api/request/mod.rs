@@ -98,7 +98,7 @@ impl RequestParts {
         }
     }
 
-    pub fn header(mut self, key: impl AsRef<str>, value: impl AsRef<str>) -> Self {
+    pub fn header(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) -> &mut Self {
         if let (Ok(name), Ok(val)) = (
             HeaderName::from_str(key.as_ref()),
             HeaderValue::from_str(value.as_ref()),
@@ -109,10 +109,10 @@ impl RequestParts {
     }
 
     pub fn try_header(
-        mut self,
+        &mut self,
         key: impl AsRef<str>,
         value: impl AsRef<str>,
-    ) -> Result<Self, HeaderError> {
+    ) -> Result<&mut Self, HeaderError> {
         let key_str = key.as_ref();
         let value_str = value.as_ref();
 
@@ -264,7 +264,7 @@ impl RequestParts {
     //     self.header("Content-Disposition", disposition_value)
     // }
 
-    pub fn headers(mut self, headers: HeaderMap) -> Self {
+    pub fn headers(&mut self, headers: HeaderMap) -> &mut Self {
         self.headers.extend(headers);
         self
     }
@@ -273,27 +273,27 @@ impl RequestParts {
         HeaderMut::new(&mut self.headers)
     }
 
-    pub fn body(mut self, body: RequestBody) -> Self {
+    pub fn body(&mut self, body: RequestBody) -> &mut Self {
         self.body = Some(body);
         self
     }
 
-    pub fn text(mut self, text: impl Into<String>) -> Self {
+    pub fn text(&mut self, text: impl Into<String>) -> &mut Self {
         self.body = Some(RequestBody::from_string(text.into()));
         self.header(CONTENT_TYPE, Text::Plain)
     }
 
-    pub fn json(mut self, value: serde_json::Value) -> Self {
+    pub fn json(&mut self, value: serde_json::Value) -> &mut Self {
         self.body = Some(RequestBody::from_json(value));
         self.header(CONTENT_TYPE, Application::Json)
     }
 
-    pub fn form(mut self, form: Vec<(String, String)>) -> Self {
+    pub fn form(&mut self, form: Vec<(String, String)>) -> &mut Self {
         self.body = Some(RequestBody::from_form(form));
         self.header(CONTENT_TYPE, Application::FormUrlEncoded)
     }
 
-    pub fn form_pairs<I, K, V>(mut self, pairs: I) -> Self
+    pub fn form_pairs<I, K, V>(&mut self, pairs: I) -> &mut Self
     where
         I: IntoIterator<Item = (K, V)>,
         K: Into<String>,
@@ -303,28 +303,28 @@ impl RequestParts {
         self.header(CONTENT_TYPE, Application::FormUrlEncoded)
     }
 
-    pub fn multipart(mut self, form: reqwest::multipart::Form) -> Self {
+    pub fn multipart(&mut self, form: reqwest::multipart::Form) -> &mut Self {
         self.body = Some(RequestBody::from_multipart(form));
         // Note: reqwest will set the content-type with boundary automatically
         self
     }
 
-    pub fn empty(mut self) -> Self {
+    pub fn empty(&mut self) -> &mut Self {
         self.body = Some(RequestBody::empty());
         self
     }
 
-    pub fn version(mut self, version: http::Version) -> Self {
+    pub fn version(&mut self, version: http::Version) -> &mut Self {
         self.version = Some(version);
         self
     }
 
-    pub fn timeout(mut self, timeout: std::time::Duration) -> Self {
+    pub fn timeout(&mut self, timeout: std::time::Duration) -> &mut Self {
         self.timeout = Some(timeout);
         self
     }
 
-    pub fn request_id(mut self, request_id: impl Into<String>) -> Self {
+    pub fn request_id(&mut self, request_id: impl Into<String>) -> &mut Self {
         self.request_id = Some(request_id.into());
         self
     }
@@ -362,13 +362,13 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_file(mut self, file: tokio::fs::File) -> Self {
+    pub fn from_file(&mut self, file: tokio::fs::File) -> &mut Self {
         self.body = Some(RequestBody::from_file(file));
         self
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_file_buffered(mut self, file: tokio::fs::File, buffer_size: usize) -> Self {
+    pub fn from_file_buffered(&mut self, file: tokio::fs::File, buffer_size: usize) -> &mut Self {
         self.body = Some(RequestBody::from_file_buffered(file, buffer_size));
         self
     }
@@ -393,7 +393,7 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_async_read<R>(mut self, reader: R) -> Self
+    pub fn from_async_read<R>(&mut self, reader: R) -> &mut Self
     where
         R: tokio::io::AsyncRead + Send + Sync + 'static,
     {
@@ -402,7 +402,7 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_tcp_stream(mut self, tcp: tokio::net::TcpStream) -> Self {
+    pub fn from_tcp_stream(&mut self, tcp: tokio::net::TcpStream) -> &mut Self {
         self.body = Some(RequestBody::from_tcp_stream(tcp));
         self
     }
@@ -417,7 +417,7 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn stream<S>(mut self, stream: S) -> Self
+    pub fn stream<S>(&mut self, stream: S) -> &mut Self
     where
         S: futures_util::Stream<Item = Result<bytes::Bytes, StreamError>> + Send + Sync + 'static,
     {
@@ -426,7 +426,7 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn io_stream<S>(mut self, stream: S) -> Self
+    pub fn io_stream<S>(&mut self, stream: S) -> &mut Self
     where
         S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>>
             + Send
