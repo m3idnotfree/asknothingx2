@@ -14,7 +14,7 @@ pub use header_mut::HeaderMut;
 
 // Re-export
 pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
-pub use reqwest::{Client, Error as ReqwestError, RequestBuilder};
+pub use reqwest::{Client, Error as ReqwestError, RequestBuilder, Response};
 
 use setup::get_global_client_or_default;
 

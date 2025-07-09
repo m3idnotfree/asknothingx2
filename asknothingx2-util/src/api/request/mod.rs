@@ -5,7 +5,11 @@ mod error;
 pub use body::CodecType;
 
 pub use body::RequestBody;
-pub use error::{HeaderError, StreamError};
+pub use error::{
+    FileOperation, HeaderError, LimitType, NetworkOperation, ProcessOperation, StreamError,
+    StreamOperation,
+};
+
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 
 use std::str::FromStr;
