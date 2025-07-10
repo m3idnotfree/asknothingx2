@@ -27,7 +27,7 @@ pub fn get_global_client_or_default() -> &'static Client {
 }
 
 fn initialize_global_client(config: Config) -> Result<(), ConfigError> {
-    let client = config.build_client()?;
+    let client = config.clone().build_client()?;
     let app_type = config.app_type;
 
     GLOBAL_CLIENT

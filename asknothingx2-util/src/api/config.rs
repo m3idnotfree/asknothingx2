@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt, time::Duration};
 
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CONNECTION},
@@ -70,6 +70,19 @@ pub enum AppType {
     Development,
     Gateway,
     Scraping,
+}
+
+impl fmt::Display for AppType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Cli => write!(f, "Cli"),
+            Self::Web => write!(f, "Web"),
+            Self::Production => write!(f, "Production"),
+            Self::Development => write!(f, "Development"),
+            Self::Gateway => write!(f, "Gateway"),
+            Self::Scraping => write!(f, "Scraping"),
+        }
+    }
 }
 
 impl Config {
@@ -276,7 +289,7 @@ impl Config {
         }
     }
 
-    pub fn build_client(&self) -> Result<Client, ConfigError> {
+    pub fn build_client(self) -> Result<Client, ConfigError> {
         let mut builder = Client::builder()
             .timeout(self.request_timeout)
             .connect_timeout(self.connection_timeout)
