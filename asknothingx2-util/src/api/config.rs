@@ -1,4 +1,4 @@
-use std::{fmt, time::Duration};
+use std::time::Duration;
 
 use http::{
     header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, CONNECTION},
@@ -6,7 +6,7 @@ use http::{
 };
 use reqwest::{tls, Certificate, Client, Proxy};
 
-use super::{content_type::Application, error::ConfigError};
+use super::{content_type::Application, error::ConfigError, AppType};
 
 mod user_agents {
     pub const CLI: &str = "asknothingx2-cli/0.0.28";
@@ -60,29 +60,6 @@ pub struct Config {
     pub prefer_http2: bool,
     pub force_http2_only: bool,
     pub async_dns: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AppType {
-    Cli,
-    Web,
-    Production,
-    Development,
-    Gateway,
-    Scraping,
-}
-
-impl fmt::Display for AppType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Cli => write!(f, "Cli"),
-            Self::Web => write!(f, "Web"),
-            Self::Production => write!(f, "Production"),
-            Self::Development => write!(f, "Development"),
-            Self::Gateway => write!(f, "Gateway"),
-            Self::Scraping => write!(f, "Scraping"),
-        }
-    }
 }
 
 impl Config {

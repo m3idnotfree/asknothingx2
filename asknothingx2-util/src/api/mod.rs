@@ -2,13 +2,15 @@ pub mod content_type;
 pub mod request;
 pub mod setup;
 
+mod app_type;
 mod auth_scheme;
 mod config;
 mod error;
 mod header_mut;
 
+pub use app_type::{AppType, AppTypeMarker};
 pub use auth_scheme::{AuthError, AuthScheme, DigestBuilder, SCRAMVariant};
-pub use config::{AppType, Config};
+pub use config::Config;
 pub use error::ConfigError;
 pub use header_mut::HeaderMut;
 
