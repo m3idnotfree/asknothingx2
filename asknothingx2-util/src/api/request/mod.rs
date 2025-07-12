@@ -19,7 +19,7 @@ use reqwest::{Client, Request, RequestBuilder, Response};
 use url::Url;
 
 use super::{
-    content_type::{Application, Text},
+    mime_type::{Application, Text},
     setup::get_global_client_or_default,
     HeaderMut,
 };

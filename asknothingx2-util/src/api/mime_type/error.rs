@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum ContentTypeError {
+pub enum Error {
     #[error("Content-Type header is required but was empty")]
     Empty,
     #[error("Content-Type header contains invalid UTF-8")]

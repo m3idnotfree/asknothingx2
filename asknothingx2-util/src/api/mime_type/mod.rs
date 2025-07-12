@@ -16,7 +16,7 @@ mod video;
 pub use application::Application;
 pub use audio::Audio;
 pub use chemical::Chemical;
-pub use error::ContentTypeError;
+pub use error::Error;
 pub use font::Font;
 pub use image::Image;
 pub use message::Message;
@@ -30,7 +30,7 @@ use std::{fmt, str::FromStr};
 use http::{header::CONTENT_TYPE, HeaderMap, HeaderValue};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ContentType {
+pub enum MimeType {
     Application(Application),
     Audio(Audio),
     Chemical(Chemical),
@@ -44,7 +44,7 @@ pub enum ContentType {
     Custom(String),
 }
 
-impl ContentType {
+impl MimeType {
     pub fn as_str(&self) -> &str {
         match self {
             Self::Application(app) => app.as_str(),
@@ -93,8 +93,8 @@ impl ContentType {
         }
     }
 
-    pub fn from_header_value(value: &HeaderValue) -> Result<Self, ContentTypeError> {
-        let content_type = value.to_str().map_err(|_| ContentTypeError::InvalidUtf8)?;
+    pub fn from_header_value(value: &HeaderValue) -> Result<Self, Error> {
+        let content_type = value.to_str().map_err(|_| Error::InvalidUtf8)?;
         Self::from_str(content_type)
     }
 
@@ -195,14 +195,14 @@ impl ContentType {
     }
 }
 
-impl fmt::Display for ContentType {
+impl fmt::Display for MimeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
 
-impl FromStr for ContentType {
-    type Err = ContentTypeError;
+impl FromStr for MimeType {
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parsed = ParsedContentType::parse_str(s)?;
@@ -210,86 +210,86 @@ impl FromStr for ContentType {
         let mime_type = parsed.mime_type;
 
         if let Ok(s) = Text::from_str(s) {
-            return Ok(ContentType::Text(s));
+            return Ok(MimeType::Text(s));
         }
 
         if let Ok(s) = Application::from_str(mime_type) {
-            return Ok(ContentType::Application(s));
+            return Ok(MimeType::Application(s));
         }
 
         if let Ok(s) = Image::from_str(s) {
-            return Ok(ContentType::Image(s));
+            return Ok(MimeType::Image(s));
         }
 
         if let Ok(s) = Video::from_str(s) {
-            return Ok(ContentType::Video(s));
+            return Ok(MimeType::Video(s));
         }
 
         if let Ok(s) = Audio::from_str(s) {
-            return Ok(ContentType::Audio(s));
+            return Ok(MimeType::Audio(s));
         }
 
         if let Ok(s) = Font::from_str(s) {
-            return Ok(ContentType::Font(s));
+            return Ok(MimeType::Font(s));
         }
 
         if let Ok(s) = Model::from_str(s) {
-            return Ok(ContentType::Model(s));
+            return Ok(MimeType::Model(s));
         }
 
         if let Ok(s) = Chemical::from_str(s) {
-            return Ok(ContentType::Chemical(s));
+            return Ok(MimeType::Chemical(s));
         }
 
         if let Ok(s) = Message::from_str(s) {
-            return Ok(ContentType::Message(s));
+            return Ok(MimeType::Message(s));
         }
 
         if let Ok(s) = Multipart::from_str(s) {
-            return Ok(ContentType::Multipart(s));
+            return Ok(MimeType::Multipart(s));
         }
 
-        Ok(ContentType::Custom(s.to_string()))
+        Ok(MimeType::Custom(s.to_string()))
     }
 }
 
-impl TryFrom<&str> for ContentType {
-    type Error = ContentTypeError;
+impl TryFrom<&str> for MimeType {
+    type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse()
     }
 }
 
-impl TryFrom<String> for ContentType {
-    type Error = ContentTypeError;
+impl TryFrom<String> for MimeType {
+    type Error = Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.parse()
     }
 }
 
-impl TryFrom<&HeaderValue> for ContentType {
-    type Error = ContentTypeError;
+impl TryFrom<&HeaderValue> for MimeType {
+    type Error = Error;
 
     fn try_from(value: &HeaderValue) -> Result<Self, Self::Error> {
         Self::from_header_value(value)
     }
 }
 
-impl From<ContentType> for String {
-    fn from(value: ContentType) -> Self {
+impl From<MimeType> for String {
+    fn from(value: MimeType) -> Self {
         value.to_string()
     }
 }
 
-impl From<ContentType> for HeaderValue {
-    fn from(value: ContentType) -> Self {
+impl From<MimeType> for HeaderValue {
+    fn from(value: MimeType) -> Self {
         value.to_header_value()
     }
 }
 
-impl<T> PartialEq<T> for ContentType
+impl<T> PartialEq<T> for MimeType
 where
     T: AsRef<str>,
 {
@@ -305,18 +305,16 @@ struct ParsedContentType<'a> {
 }
 
 impl<'a> ParsedContentType<'a> {
-    pub fn parse(header_value: &'a HeaderValue) -> Result<Self, ContentTypeError> {
-        let content_type_str = header_value
-            .to_str()
-            .map_err(|_| ContentTypeError::InvalidUtf8)?;
+    pub fn parse(header_value: &'a HeaderValue) -> Result<Self, Error> {
+        let content_type_str = header_value.to_str().map_err(|_| Error::InvalidUtf8)?;
         Self::parse_str(content_type_str)
     }
 
-    pub fn parse_str(input: &'a str) -> Result<Self, ContentTypeError> {
+    pub fn parse_str(input: &'a str) -> Result<Self, Error> {
         let input = input.trim();
 
         if input.is_empty() {
-            return Err(ContentTypeError::Empty);
+            return Err(Error::Empty);
         }
 
         if let Some(semicolon_pos) = input.find(';') {
@@ -324,7 +322,7 @@ impl<'a> ParsedContentType<'a> {
             let parameters = input[semicolon_pos + 1..].trim();
 
             if !Self::is_valid_mime_type(mime_type) {
-                return Err(ContentTypeError::InvalidMimeType(mime_type.to_string()));
+                return Err(Error::InvalidMimeType(mime_type.to_string()));
             }
 
             Ok(Self {
@@ -333,7 +331,7 @@ impl<'a> ParsedContentType<'a> {
             })
         } else {
             if !Self::is_valid_mime_type(input) {
-                return Err(ContentTypeError::InvalidMimeType(input.to_string()));
+                return Err(Error::InvalidMimeType(input.to_string()));
             }
 
             Ok(Self {
@@ -434,8 +432,8 @@ impl<'a> ParsedContentType<'a> {
         })
     }
 
-    pub fn content_type(&self) -> Result<ContentType, ContentTypeError> {
-        ContentType::from_str(self.mime_type)
+    pub fn content_type(&self) -> Result<MimeType, Error> {
+        MimeType::from_str(self.mime_type)
     }
 }
 

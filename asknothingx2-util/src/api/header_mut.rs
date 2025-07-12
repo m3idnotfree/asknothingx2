@@ -8,7 +8,7 @@ use http::{
 };
 
 use crate::api::{
-    content_type::{Application, Multipart, Text},
+    mime_type::{Application, Multipart, Text},
     AuthScheme,
 };
 

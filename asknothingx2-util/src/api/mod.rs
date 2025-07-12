@@ -1,4 +1,4 @@
-pub mod content_type;
+pub mod mime_type;
 pub mod request;
 pub mod setup;
 

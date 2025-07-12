@@ -15,7 +15,7 @@ macro_rules! case_insensitive_match {
         )*
 
         else {
-            Err(crate::api::content_type::ContentTypeError::Unsupported($input.to_string()))
+            Err(crate::api::mime_type::Error::Unsupported($input.to_string()))
         }
     };
 }
@@ -38,7 +38,7 @@ macro_rules! define_mime_type {
     ) => {
         use std::str::FromStr;
 
-        use crate::api::content_type::{ContentType, ContentTypeError};
+        use crate::api::mime_type::{MimeType, Error};
         use http::HeaderValue;
 
         $(#[$enum_meta])*
@@ -76,8 +76,8 @@ macro_rules! define_mime_type {
                 HeaderValue::from_static(self.as_static())
             }
 
-            pub fn from_header_value(value: &HeaderValue) -> Result<Self, ContentTypeError> {
-                let content_type = value.to_str().map_err(|_| ContentTypeError::InvalidUtf8)?;
+            pub fn from_header_value(value: &HeaderValue) -> Result<Self, Error> {
+                let content_type = value.to_str().map_err(|_| Error::InvalidUtf8)?;
                 Self::from_str(content_type)
             }
 
@@ -114,7 +114,7 @@ macro_rules! define_mime_type {
         }
 
         impl TryFrom<&str> for $enum_name {
-            type Error = ContentTypeError;
+            type Error = Error;
 
             fn try_from(value: &str) -> Result<Self, Self::Error> {
                 value.parse()
@@ -122,7 +122,7 @@ macro_rules! define_mime_type {
         }
 
         impl TryFrom<String> for $enum_name {
-            type Error = ContentTypeError;
+            type Error = Error;
 
             fn try_from(value: String) -> Result<Self, Self::Error> {
                 value.parse()
@@ -130,7 +130,7 @@ macro_rules! define_mime_type {
         }
 
         impl TryFrom<&HeaderValue> for $enum_name {
-            type Error = ContentTypeError;
+            type Error = Error;
 
             fn try_from(value: &HeaderValue) -> Result<Self, Self::Error> {
                 Self::from_header_value(value)
@@ -162,8 +162,8 @@ macro_rules! define_mime_type {
             }
         }
 
-        impl PartialEq<ContentType> for $enum_name {
-            fn eq(&self, other: &ContentType) -> bool {
+        impl PartialEq<MimeType> for $enum_name {
+            fn eq(&self, other: &MimeType) -> bool {
                 self.as_str().eq_ignore_ascii_case(other.as_str())
             }
         }
@@ -175,11 +175,11 @@ macro_rules! define_mime_type {
         }
 
         impl FromStr for $enum_name {
-            type Err = ContentTypeError;
+            type Err = Error;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 if s.is_empty() {
-                    return Err(ContentTypeError::Empty);
+                    return Err(Error::Empty);
                 }
 
                 let mime_type = s.split(';').next().unwrap_or(s).trim();

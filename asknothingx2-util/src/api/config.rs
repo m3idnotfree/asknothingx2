@@ -6,7 +6,7 @@ use http::{
 };
 use reqwest::{tls, Certificate, Client, Proxy};
 
-use super::{content_type::Application, error::ConfigError, AppType};
+use super::{error::ConfigError, mime_type::Application, AppType};
 
 mod user_agents {
     pub const CLI: &str = "asknothingx2-cli/0.0.28";
