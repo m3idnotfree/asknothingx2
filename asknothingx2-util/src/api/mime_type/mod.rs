@@ -103,79 +103,17 @@ impl MimeType {
     }
 
     pub fn extract_charset(content_type: &str) -> Option<&str> {
-        ParsedContentType::parse_str(content_type).ok()?.charset()
+        ParsedMimeType::parse_str(content_type).ok()?.charset()
     }
 
     pub fn extract_boundary(content_type: &str) -> Option<&str> {
-        ParsedContentType::parse_str(content_type).ok()?.boundary()
+        ParsedMimeType::parse_str(content_type).ok()?.boundary()
     }
 
     pub fn matches_with_params(content_type: &str, expected: Self) -> bool {
         Self::from_str(content_type)
             .map(|parsed| parsed == expected)
             .unwrap_or(false)
-    }
-
-    pub fn from_extension(ext: &str) -> Option<Self> {
-        if let Some(text) = Text::from_extension(ext) {
-            return Some(Self::Text(text));
-        }
-
-        if let Some(app) = Application::from_extension(ext) {
-            return Some(Self::Application(app));
-        }
-
-        if let Some(image) = Image::from_extension(ext) {
-            return Some(Self::Image(image));
-        }
-
-        if let Some(video) = Video::from_extension(ext) {
-            return Some(Self::Video(video));
-        }
-
-        if let Some(audio) = Audio::from_extension(ext) {
-            return Some(Self::Audio(audio));
-        }
-
-        if let Some(font) = Font::from_extension(ext) {
-            return Some(Self::Font(font));
-        }
-
-        if let Some(model) = Model::from_extension(ext) {
-            return Some(Self::Model(model));
-        }
-
-        if let Some(chemical) = Chemical::from_extension(ext) {
-            return Some(Self::Chemical(chemical));
-        }
-
-        if let Some(message) = Message::from_extension(ext) {
-            return Some(Self::Message(message));
-        }
-
-        if let Some(multipart) = Multipart::from_extension(ext) {
-            return Some(Self::Multipart(multipart));
-        }
-
-        None
-    }
-
-    pub fn from_path<P: AsRef<std::path::Path>>(path: P) -> Option<Self> {
-        path.as_ref()
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .and_then(Self::from_extension)
-    }
-
-    pub fn from_filename(filename: &str) -> Option<Self> {
-        filename
-            .rfind('.')
-            .and_then(|pos| filename.get(pos + 1..))
-            .and_then(Self::from_extension)
-    }
-
-    pub fn is_extension_supported(ext: &str) -> bool {
-        Self::from_extension(ext).is_some()
     }
 
     pub const fn is_text(&self) -> bool {
@@ -209,7 +147,7 @@ impl FromStr for MimeType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parsed = ParsedContentType::parse_str(s)?;
+        let parsed = ParsedMimeType::parse_str(s)?;
 
         let mime_type = parsed.mime_type;
 
@@ -293,22 +231,49 @@ impl From<MimeType> for HeaderValue {
     }
 }
 
-impl<T> PartialEq<T> for MimeType
-where
-    T: AsRef<str>,
-{
-    fn eq(&self, other: &T) -> bool {
-        self.as_str() == other.as_ref()
+impl PartialEq<String> for MimeType {
+    fn eq(&self, other: &String) -> bool {
+        self.as_str().eq_ignore_ascii_case(other.as_ref())
+    }
+}
+
+impl PartialEq<MimeType> for String {
+    fn eq(&self, other: &MimeType) -> bool {
+        self.eq_ignore_ascii_case(other.as_str())
+    }
+}
+
+impl PartialEq<&str> for MimeType {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str().eq_ignore_ascii_case(other.as_ref())
+    }
+}
+
+impl PartialEq<MimeType> for &str {
+    fn eq(&self, other: &MimeType) -> bool {
+        self.eq_ignore_ascii_case(other.as_str())
+    }
+}
+
+impl PartialEq<HeaderValue> for MimeType {
+    fn eq(&self, other: &HeaderValue) -> bool {
+        other.eq(self.as_str())
+    }
+}
+
+impl PartialEq<MimeType> for HeaderValue {
+    fn eq(&self, other: &MimeType) -> bool {
+        self.eq(other.as_str())
     }
 }
 
 #[derive(Debug, Clone)]
-struct ParsedContentType<'a> {
+pub struct ParsedMimeType<'a> {
     pub mime_type: &'a str,
     parameters: &'a str,
 }
 
-impl<'a> ParsedContentType<'a> {
+impl<'a> ParsedMimeType<'a> {
     pub fn parse(header_value: &'a HeaderValue) -> Result<Self, Error> {
         let content_type_str = header_value
             .to_str()
@@ -464,5 +429,239 @@ const fn is_valid_mime_token_byte(byte: u8) -> bool {
         // b' ' | b'\t' => true,
         // Everything else rejected (including Unicode, control chars, symbols)
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::collection::vec;
+    use proptest::prelude::*;
+    use proptest::string::string_regex;
+
+    fn valid_mime_token() -> impl Strategy<Value = String> {
+        string_regex(r"[a-zA-Z0-9][a-zA-Z0-9\-\.\+_]*")
+            .unwrap()
+            .prop_filter("non-empty", |s| !s.is_empty() && s.len() <= 50)
+    }
+
+    fn known_mime_type() -> impl Strategy<Value = MimeType> {
+        prop_oneof![
+            any::<Application>().prop_map(MimeType::Application),
+            any::<Audio>().prop_map(MimeType::Audio),
+            any::<Chemical>().prop_map(MimeType::Chemical),
+            any::<Font>().prop_map(MimeType::Font),
+            any::<Image>().prop_map(MimeType::Image),
+            any::<Message>().prop_map(MimeType::Message),
+            any::<Model>().prop_map(MimeType::Model),
+            any::<Multipart>().prop_map(MimeType::Multipart),
+            any::<Text>().prop_map(MimeType::Text),
+            any::<Video>().prop_map(MimeType::Video),
+        ]
+    }
+
+    fn mime_parameters() -> impl Strategy<Value = String> {
+        vec((valid_mime_token(), valid_mime_token()), 0..5).prop_map(|params| {
+            if params.is_empty() {
+                String::new()
+            } else {
+                params
+                    .into_iter()
+                    .map(|(key, value)| format!("{key}={value}"))
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            }
+        })
+    }
+
+    fn invalid_mime_type() -> impl Strategy<Value = String> {
+        prop_oneof![
+            Just("".to_string()),
+            string_regex(r"[a-zA-Z0-9]+").unwrap(),
+            string_regex(r"[a-zA-Z0-9]+/[a-zA-Z0-9]+/[a-zA-Z0-9]+").unwrap(),
+            string_regex(r"[a-zA-Z0-9]+/[\s\t\n]+").unwrap(),
+            string_regex(r"[a-zA-Z0-9]{500}/[a-zA-Z0-9]{500}").unwrap(),
+        ]
+    }
+
+    proptest! {
+        #[test]
+        fn known_mime_type_roundtrip(mime_type in known_mime_type()) {
+            let string = mime_type.to_string();
+            let lowercase = string.to_lowercase();
+            let uppercase = string.to_uppercase();
+            let mixed = string.clone().chars()
+                .enumerate()
+                .map(|(i, c)| {
+                    if i % 2 == 0 {
+                        c.to_ascii_uppercase()
+                    } else {
+                        c.to_ascii_lowercase()
+                    }
+                })
+                .collect::<String>();
+
+            let parsed = MimeType::from_str(&string).unwrap();
+            let parsed_low = MimeType::from_str(&lowercase).unwrap();
+            let parsed_up = MimeType::from_str(&uppercase).unwrap();
+            let parsed_mixed = MimeType::from_str(&mixed).unwrap();
+
+            ParsedMimeType::parse_str(&string).unwrap();
+            ParsedMimeType::parse_str(&lowercase).unwrap();
+            ParsedMimeType::parse_str(&uppercase).unwrap();
+            ParsedMimeType::parse_str(&mixed).unwrap();
+
+
+            prop_assert_eq!(string.matches('/').count(), 1);
+            prop_assert!(!string.is_empty());
+            prop_assert!(!string.starts_with('/'));
+            prop_assert!(!string.ends_with('/'));
+            prop_assert!(string.is_ascii());
+            prop_assert!(string.len() <= 200);
+
+            prop_assert_eq!(mime_type.clone(), string.clone());
+            prop_assert_eq!(mime_type.clone(), lowercase.clone());
+            prop_assert_eq!(mime_type.clone(), uppercase.clone());
+            prop_assert_eq!(mime_type.clone(), mixed.clone());
+
+            prop_assert_eq!(string, mime_type.clone());
+            prop_assert_eq!(lowercase, mime_type.clone());
+            prop_assert_eq!(uppercase, mime_type.clone());
+            prop_assert_eq!(mixed, mime_type.clone());
+
+            prop_assert_eq!(mime_type.clone(), parsed.clone());
+            prop_assert_eq!(mime_type.clone(), parsed_low.clone());
+            prop_assert_eq!(mime_type.clone(), parsed_up.clone());
+            prop_assert_eq!(mime_type.clone(), parsed_mixed.clone());
+
+            prop_assert_eq!(parsed, mime_type.clone());
+            prop_assert_eq!(parsed_low, mime_type.clone());
+            prop_assert_eq!(parsed_up, mime_type.clone());
+            prop_assert_eq!(parsed_mixed, mime_type.clone());
+
+            let str = mime_type.as_str();
+            let parsed = MimeType::from_str(str).unwrap();
+            let parsed_low = MimeType::from_str(&str.to_lowercase()).unwrap();
+            let parsed_up = MimeType::from_str(&str.to_uppercase()).unwrap();
+
+            prop_assert_eq!(str.matches('/').count(), 1);
+            prop_assert!(!str.is_empty());
+            prop_assert!(!str.starts_with('/'));
+            prop_assert!(!str.ends_with('/'));
+            prop_assert!(str.is_ascii());
+            prop_assert!(str.len() <= 200);
+
+            prop_assert_eq!(mime_type.clone(), parsed.clone());
+            prop_assert_eq!(mime_type.clone(), parsed_low.clone());
+            prop_assert_eq!(mime_type.clone(), parsed_up.clone());
+
+            prop_assert_eq!(parsed, mime_type.clone());
+            prop_assert_eq!(parsed_low, mime_type.clone());
+            prop_assert_eq!(parsed_up, mime_type.clone());
+
+            let header_value = mime_type.clone().to_header_value();
+            let parsed = MimeType::from_header_value(&header_value).unwrap();
+            ParsedMimeType::parse(&header_value).unwrap();
+
+            prop_assert!(header_value.to_str().is_ok());
+
+            prop_assert_eq!(mime_type.clone(), header_value.clone());
+            prop_assert_eq!(mime_type.clone(), parsed);
+
+            prop_assert_eq!(header_value, mime_type);
+        }
+
+        #[test]
+        fn mime_type_with_parameters_parsing(
+            mime_type in known_mime_type(),
+            params in mime_parameters()
+        ) {
+            let base_str = mime_type.to_string();
+            let with_params = if params.is_empty() {
+                base_str
+            } else {
+                format!("{base_str}; {params}")
+            };
+
+            let parsed = MimeType::from_str(&with_params);
+            prop_assert!(parsed.is_ok());
+
+            let parsed_mime = parsed.unwrap();
+            if params.is_empty() {
+                prop_assert_eq!(parsed_mime, mime_type);
+            } else {
+                prop_assert!(parsed_mime.as_str().starts_with(mime_type.as_str()));
+            }
+        }
+
+        #[test]
+        fn invalid_mime_types_rejected(invalid in invalid_mime_type()) {
+            let result = MimeType::from_str(&invalid);
+            prop_assert!(result.is_err());
+        }
+
+
+        #[test]
+        fn parameter_extraction(
+            mime_type in known_mime_type(),
+            charset in valid_mime_token(),
+            boundary in valid_mime_token()
+        ) {
+            let with_charset = format!("{mime_type}; charset={charset}");
+            let with_boundary = format!("{mime_type}; boundary={boundary}");
+            let with_both = format!("{mime_type}; charset={charset}; boundary={boundary}");
+
+            prop_assert_eq!(MimeType::extract_charset(&with_charset), Some(charset.as_str()));
+            prop_assert_eq!(MimeType::extract_boundary(&with_boundary), Some(boundary.as_str()));
+            prop_assert_eq!(MimeType::extract_charset(&with_both), Some(charset.as_str()));
+            prop_assert_eq!(MimeType::extract_boundary(&with_both), Some(boundary.as_str()));
+        }
+
+        #[test]
+        fn whitespace(mime_type in known_mime_type()) {
+            let base_str = mime_type.to_string();
+            let with_leading_space = format!(" {base_str}");
+            let with_trailing_space = format!("{base_str} ");
+            let with_both_spaces = format!(" {base_str} ");
+
+            prop_assert_eq!(MimeType::from_str(&with_leading_space).unwrap(), mime_type.clone());
+            prop_assert_eq!(MimeType::from_str(&with_trailing_space).unwrap(), mime_type.clone());
+            prop_assert_eq!(MimeType::from_str(&with_both_spaces).unwrap(), mime_type);
+        }
+    }
+
+    #[test]
+    fn parse_simple_mime_type() {
+        let parsed = ParsedMimeType::parse_str("text/plain").unwrap();
+        assert_eq!(parsed.mime_type, "text/plain");
+        assert_eq!(parsed.parameters, "");
+        assert_eq!(parsed.charset(), None);
+        assert_eq!(parsed.boundary(), None);
+    }
+
+    #[test]
+    fn parse_mime_type_with_charset() {
+        let parsed = ParsedMimeType::parse_str("text/html; charset=utf-8").unwrap();
+        assert_eq!(parsed.mime_type, "text/html");
+        assert_eq!(parsed.parameters, "charset=utf-8");
+        assert_eq!(parsed.charset(), Some("utf-8"));
+    }
+
+    #[test]
+    fn parse_mime_type_with_boundary() {
+        let parsed =
+            ParsedMimeType::parse_str("multipart/form-data; boundary=----WebKitFormBoundary")
+                .unwrap();
+        assert_eq!(parsed.mime_type, "multipart/form-data");
+        assert_eq!(parsed.boundary(), Some("----WebKitFormBoundary"));
+    }
+
+    #[test]
+    fn parse_mime_type_with_multiple_parameters() {
+        let parsed =
+            ParsedMimeType::parse_str("text/html; charset=utf-8; boundary=test123").unwrap();
+        assert_eq!(parsed.mime_type, "text/html");
+        assert_eq!(parsed.charset(), Some("utf-8"));
+        assert_eq!(parsed.boundary(), Some("test123"));
     }
 }

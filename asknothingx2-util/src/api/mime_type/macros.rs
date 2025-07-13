@@ -83,17 +83,6 @@ macro_rules! define_mime_type {
                 Self::from_str(content_type)
             }
 
-            pub fn from_extension(ext: &str) -> Option<Self> {
-                match ext.to_ascii_lowercase().as_str() {
-                    $(
-                        $(
-                            $ext => Some(Self::$variant),
-                        )*
-                    )*
-                    _ => None,
-                }
-            }
-
             #[inline]
             pub const fn extensions(&self) -> &[&str] {
                 match self {
@@ -187,6 +176,12 @@ macro_rules! define_mime_type {
             }
         }
 
+        impl PartialEq<$enum_name> for MimeType {
+            fn eq(&self, other: &$enum_name) -> bool {
+                self.as_str().eq_ignore_ascii_case(other.as_str())
+            }
+        }
+
         impl AsRef<str> for $enum_name {
             fn as_ref(&self) -> &str {
                 self.as_str()
@@ -230,6 +225,24 @@ macro_rules! define_mime_type {
             }
         }
 
+        #[cfg(test)]
+        use proptest::strategy::Strategy;
+
+        #[cfg(test)]
+        impl proptest::arbitrary::Arbitrary for $enum_name {
+            type Parameters = ();
+            type Strategy = proptest::strategy::BoxedStrategy<Self>;
+
+            fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+                proptest::prop_oneof![
+                    $(
+                        proptest::strategy::Just($enum_name::$variant)
+                    ),*
+                ]
+                .boxed()
+            }
+        }
+
 
         #[cfg(test)]
         mod tests {
@@ -262,23 +275,6 @@ macro_rules! define_mime_type {
                             );
                         )*
                     )?
-                )*
-            }
-
-            #[test]
-            fn extension() {
-                $(
-                    $(
-                        assert_eq!(
-                            $enum_name::from_extension($ext),
-                            Some($enum_name::$variant)
-                        );
-
-                        assert_eq!(
-                            $enum_name::from_extension(&$ext.to_uppercase()),
-                            Some($enum_name::$variant)
-                        );
-                    )*
                 )*
             }
 
