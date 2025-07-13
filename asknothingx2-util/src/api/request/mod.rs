@@ -1,26 +1,21 @@
 mod body;
-mod error;
 
 #[cfg(feature = "stream")]
 pub use body::CodecType;
-
 pub use body::RequestBody;
-pub use error::{
-    FileOperation, HeaderError, LimitType, NetworkOperation, ProcessOperation, StreamError,
-    StreamOperation,
-};
-
-use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 
 use std::str::FromStr;
 
 use http::{header::CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue, Method};
+use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use reqwest::{Client, Request, RequestBuilder, Response};
 use url::Url;
 
 use super::{
+    app_type::AppType,
+    client,
+    error::{self, Error},
     mime_type::{Application, Text},
-    setup::get_global_client_or_default,
     HeaderMut,
 };
 
@@ -83,10 +78,11 @@ pub struct RequestParts {
     pub version: Option<http::Version>,
     pub timeout: Option<std::time::Duration>,
     pub request_id: Option<String>,
+    pub app_type: AppType,
 }
 
 impl RequestParts {
-    pub fn new(method: Method, url: Url) -> Self {
+    pub fn new(method: Method, url: Url, app_type: AppType) -> Self {
         Self {
             method,
             url,
@@ -95,10 +91,11 @@ impl RequestParts {
             version: None,
             timeout: None,
             request_id: None,
+            app_type,
         }
     }
 
-    pub fn header(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) -> &mut Self {
+    fn header(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) -> &mut Self {
         if let (Ok(name), Ok(val)) = (
             HeaderName::from_str(key.as_ref()),
             HeaderValue::from_str(value.as_ref()),
@@ -108,29 +105,32 @@ impl RequestParts {
         self
     }
 
-    pub fn try_header(
-        &mut self,
-        key: impl AsRef<str>,
-        value: impl AsRef<str>,
-    ) -> Result<&mut Self, HeaderError> {
-        let key_str = key.as_ref();
-        let value_str = value.as_ref();
-
-        let name = HeaderName::from_str(key_str).map_err(|e| HeaderError::InvalidHeaderName {
-            name: key_str.to_string(),
-            reason: e.to_string(),
-        })?;
-
-        let val =
-            HeaderValue::from_str(value_str).map_err(|e| HeaderError::InvalidHeaderValue {
-                name: key_str.to_string(),
-                value: value_str.to_string(),
-                reason: e.to_string(),
-            })?;
-
-        self.headers.insert(name, val);
-        Ok(self)
-    }
+    // pub fn try_header(
+    //     &mut self,
+    //     key: impl AsRef<str>,
+    //     value: impl AsRef<str>,
+    // ) -> Result<&mut Self, Error> {
+    //     let key_str = key.as_ref();
+    //     let value_str = value.as_ref();
+    //     let name =
+    //         HeaderName::from_str(key_str).map_err(|e| Error::new(Kind::RequestBuild, Some(e)))?;
+    //
+    //     // let name = HeaderName::from_str(key_str).map_err(|e| HeaderError::InvalidHeaderName {
+    //     //     name: key_str.to_string(),
+    //     //     reason: e.to_string(),
+    //     // })?;
+    //
+    //     let val = HeaderValue::from_str(value_str)
+    //         .map_err(|e| Error::new(Kind::RequestBuild, Some(e)))?;
+    //     // HeaderValue::from_str(value_str).map_err(|e| HeaderError::InvalidHeaderValue {
+    //     //     name: key_str.to_string(),
+    //     //     value: value_str.to_string(),
+    //     //     reason: e.to_string(),
+    //     // })?;
+    //
+    //     self.headers.insert(name, val);
+    //     Ok(self)
+    // }
 
     // pub fn header_encoded(mut self, key: impl AsRef<str>, value: impl AsRef<str>) -> Self {
     //     let key_str = key.as_ref();
@@ -264,10 +264,10 @@ impl RequestParts {
     //     self.header("Content-Disposition", disposition_value)
     // }
 
-    pub fn headers(&mut self, headers: HeaderMap) -> &mut Self {
-        self.headers.extend(headers);
-        self
-    }
+    // pub fn headers(&mut self, headers: HeaderMap) -> &mut Self {
+    //     self.headers.extend(headers);
+    //     self
+    // }
 
     pub fn header_mut(&mut self) -> HeaderMut<'_> {
         HeaderMut::new(&mut self.headers)
@@ -309,58 +309,6 @@ impl RequestParts {
         self
     }
 
-    pub fn empty(&mut self) -> &mut Self {
-        self.body = Some(RequestBody::empty());
-        self
-    }
-
-    pub fn version(&mut self, version: http::Version) -> &mut Self {
-        self.version = Some(version);
-        self
-    }
-
-    pub fn timeout(&mut self, timeout: std::time::Duration) -> &mut Self {
-        self.timeout = Some(timeout);
-        self
-    }
-
-    pub fn request_id(&mut self, request_id: impl Into<String>) -> &mut Self {
-        self.request_id = Some(request_id.into());
-        self
-    }
-
-    pub fn into_request_builder(self, client: &Client) -> (RequestBuilder, Option<String>) {
-        let mut builder = client.request(self.method, self.url);
-
-        if !self.headers.is_empty() {
-            builder = builder.headers(self.headers);
-        }
-
-        if let Some(version) = self.version {
-            builder = builder.version(version);
-        }
-
-        if let Some(timeout) = self.timeout {
-            builder = builder.timeout(timeout);
-        }
-
-        if let Some(body) = self.body {
-            builder = body.into_reqwest_body(builder);
-        }
-
-        (builder, self.request_id)
-    }
-
-    pub fn into_request(self, client: &Client) -> Result<Request, reqwest::Error> {
-        let (request_builder, _) = self.into_request_builder(client);
-        request_builder.build()
-    }
-
-    pub async fn send(self) -> Result<Response, reqwest::Error> {
-        let (request_builder, _) = self.into_request_builder(get_global_client_or_default());
-        request_builder.send().await
-    }
-
     #[cfg(feature = "stream")]
     pub fn from_file(&mut self, file: tokio::fs::File) -> &mut Self {
         self.body = Some(RequestBody::from_file(file));
@@ -377,7 +325,7 @@ impl RequestParts {
     pub async fn from_file_path<P: AsRef<std::path::Path>>(
         mut self,
         path: P,
-    ) -> Result<Self, StreamError> {
+    ) -> Result<Self, Error> {
         self.body = Some(RequestBody::from_file_path(path).await?);
         Ok(self)
     }
@@ -387,7 +335,7 @@ impl RequestParts {
         mut self,
         path: P,
         buffer_size: usize,
-    ) -> Result<Self, StreamError> {
+    ) -> Result<Self, Error> {
         self.body = Some(RequestBody::from_file_path_buffered(path, buffer_size).await?);
         Ok(self)
     }
@@ -408,10 +356,7 @@ impl RequestParts {
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_command_output(
-        mut self,
-        command: tokio::process::Command,
-    ) -> Result<Self, StreamError> {
+    pub fn from_command_output(mut self, command: tokio::process::Command) -> Result<Self, Error> {
         self.body = Some(RequestBody::from_command_output(command)?);
         Ok(self)
     }
@@ -419,7 +364,7 @@ impl RequestParts {
     #[cfg(feature = "stream")]
     pub fn stream<S>(&mut self, stream: S) -> &mut Self
     where
-        S: futures_util::Stream<Item = Result<bytes::Bytes, StreamError>> + Send + Sync + 'static,
+        S: futures_util::Stream<Item = Result<bytes::Bytes, Error>> + Send + Sync + 'static,
     {
         self.body = Some(RequestBody::from_stream(stream));
         self
@@ -436,6 +381,67 @@ impl RequestParts {
         self.body = Some(RequestBody::from_io_stream(stream));
         self
     }
+
+    pub fn empty(&mut self) -> &mut Self {
+        self.body = Some(RequestBody::empty());
+        self
+    }
+
+    pub fn version(&mut self, version: http::Version) -> &mut Self {
+        self.version = Some(version);
+        self
+    }
+
+    pub fn timeout(&mut self, timeout: std::time::Duration) -> &mut Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    pub fn request_id(&mut self, request_id: impl Into<String>) -> &mut Self {
+        self.request_id = Some(request_id.into());
+        self
+    }
+
+    pub fn into_request_builder(
+        self,
+        client: &Client,
+    ) -> Result<(RequestBuilder, Option<String>), Error> {
+        let mut builder = client.request(self.method, self.url);
+
+        if !self.headers.is_empty() {
+            builder = builder.headers(self.headers);
+        }
+
+        if let Some(version) = self.version {
+            builder = builder.version(version);
+        }
+
+        if let Some(timeout) = self.timeout {
+            builder = builder.timeout(timeout);
+        }
+
+        if let Some(body) = self.body {
+            builder = body.into_reqwest_body(builder)?;
+        }
+
+        Ok((builder, self.request_id))
+    }
+
+    pub fn into_request(self, client: &Client) -> Result<Request, Error> {
+        let (request_builder, _) = self.into_request_builder(client)?;
+        request_builder.build().map_err(error::request::build)
+    }
+
+    pub async fn send(self) -> Result<Response, Error> {
+        let client = client::get_or_default(&self.app_type).await;
+        let (request_builder, _request_id) = self.into_request_builder(&client)?;
+
+        // if let Some(id) = request_id {
+        //     tracing::debug!("Sending request with ID: {}", id);
+        // }
+
+        request_builder.send().await.map_err(Error::from)
+    }
 }
 
 impl IntoRequestParts for RequestParts {
@@ -445,13 +451,11 @@ impl IntoRequestParts for RequestParts {
 }
 
 /// Decode a percent-encoded header value back to UTF-8
-pub fn decode_header_value(encoded: &str) -> Result<String, HeaderError> {
+pub fn decode_header_value(encoded: &str) -> Result<String, Error> {
     percent_decode_str(encoded)
         .decode_utf8()
         .map(|cow| cow.into_owned())
-        .map_err(|e| HeaderError::InvalidUtf8 {
-            reason: e.to_string(),
-        })
+        .map_err(error::serialization::url_decode)
 }
 
 /// Encode a string using the safe header encoding set

@@ -11,7 +11,7 @@ mod header_mut;
 pub use app_type::{AppType, AppTypeMarker};
 pub use auth_scheme::{AuthError, AuthScheme, DigestBuilder, SCRAMVariant};
 pub use config::Config;
-pub use error::ConfigError;
+pub use error::{Error, Kind};
 pub use header_mut::HeaderMut;
 
 // Re-export

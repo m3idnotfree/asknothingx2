@@ -6,7 +6,11 @@ use http::{
 };
 use reqwest::{tls, Certificate, Client, Proxy};
 
-use super::{error::ConfigError, mime_type::Application, AppType};
+use super::{
+    error::{self, Error},
+    mime_type::Application,
+    AppType, HeaderMut,
+};
 
 mod user_agents {
     pub const CLI: &str = "asknothingx2-cli/0.0.28";
@@ -68,7 +72,7 @@ impl Config {
         headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
 
         Self {
-            app_type: AppType::Cli,
+            app_type: AppType::CLI,
             request_timeout: Duration::from_secs(60),
             connection_timeout: Duration::from_secs(10),
             max_connections: 1,
@@ -104,7 +108,7 @@ impl Config {
         );
 
         Self {
-            app_type: AppType::Web,
+            app_type: AppType::WEB,
             request_timeout: Duration::from_secs(30),
             connection_timeout: Duration::from_secs(5),
             max_connections: 10,
@@ -138,7 +142,7 @@ impl Config {
         );
 
         Self {
-            app_type: AppType::Production,
+            app_type: AppType::PRODUCTION,
             request_timeout: Duration::from_secs(10),
             connection_timeout: Duration::from_secs(3),
             max_connections: 50,
@@ -171,7 +175,7 @@ impl Config {
         );
 
         Self {
-            app_type: AppType::Development,
+            app_type: AppType::DEVELOPMENT,
             request_timeout: Duration::from_secs(5),
             connection_timeout: Duration::from_secs(2),
             max_connections: 1,
@@ -200,7 +204,7 @@ impl Config {
         headers.insert(ACCEPT, Application::Json.to_header_value());
 
         Self {
-            app_type: AppType::Gateway,
+            app_type: AppType::GATEWAY,
             request_timeout: Duration::from_secs(5),
             connection_timeout: Duration::from_secs(1),
             max_connections: 100,
@@ -242,7 +246,7 @@ impl Config {
         );
 
         Self {
-            app_type: AppType::Scraping,
+            app_type: AppType::SCRAPING,
             request_timeout: Duration::from_secs(30),
             connection_timeout: Duration::from_secs(10),
             max_connections: 5,
@@ -266,7 +270,7 @@ impl Config {
         }
     }
 
-    pub fn build_client(self) -> Result<Client, ConfigError> {
+    pub fn build_client(self) -> Result<Client, Error> {
         let mut builder = Client::builder()
             .timeout(self.request_timeout)
             .connect_timeout(self.connection_timeout)
@@ -279,15 +283,29 @@ impl Config {
             .referer(self.send_referer)
             .cookie_store(self.save_cookies);
 
-        // TCP keepalive
+        if self.request_timeout.is_zero() {
+            return Err(error::config::invalid("request timeout cannot be zero"));
+        }
+        if self.connection_timeout.is_zero() {
+            return Err(error::config::invalid("connection timeout cannot be zero"));
+        }
+
         if let Some(keepalive) = self.detect_dead_connections {
+            if keepalive.is_zero() {
+                return Err(error::config::invalid("keepalive duration cannot be zero"));
+            }
             builder = builder.tcp_keepalive(Some(keepalive));
         }
 
-        // Redirects
         builder = if self.follow_redirects == 0 {
             builder.redirect(reqwest::redirect::Policy::none())
         } else {
+            if self.follow_redirects > 20 {
+                return Err(error::config::invalid(
+                    "redirect limit cannot exceed 20 to prevent infinite loops",
+                ));
+            }
+
             builder.redirect(reqwest::redirect::Policy::limited(
                 self.follow_redirects as usize,
             ))
@@ -307,6 +325,13 @@ impl Config {
             builder = builder.min_tls_version(*tls_ver);
         }
 
+        // Security validation
+        if self.require_https && (self.allow_invalid_certificates || self.allow_wrong_hostnames) {
+            return Err(error::config::invalid(
+                "require_https conflicts with allowing invalid certificates or hostnames",
+            ));
+        }
+
         // TLS settings
         if self.allow_invalid_certificates {
             builder = builder.danger_accept_invalid_certs(true);
@@ -319,29 +344,65 @@ impl Config {
             builder = builder.hickory_dns(true);
         }
 
-        // Proxy
         if let Some(proxy_url) = &self.proxy_url {
-            let proxy = Proxy::all(proxy_url).map_err(|e| ConfigError::InvalidProxyUrl {
-                url: proxy_url.to_string(),
-                reason: e.to_string(),
-                source: e,
+            if proxy_url.is_empty() {
+                return Err(error::config::invalid("proxy URL cannot be empty"));
+            }
+
+            let proxy = Proxy::all(proxy_url).map_err(|e| {
+                error::config::invalid(format!("invalid proxy URL '{proxy_url}': {e}"))
+                    .with_input(proxy_url)
             })?;
+
             builder = builder.proxy(proxy);
         }
 
-        // Custom certificates
         for cert in &self.custom_certificates {
             builder = builder.add_root_certificate(cert.clone());
         }
 
-        // Default headers
         if !self.default_headers.is_empty() {
             builder = builder.default_headers(self.default_headers.clone());
         }
+        builder.build().map_err(error::request::build)
+    }
 
-        builder.build().map_err(|e| ConfigError::ClientBuildFailed {
-            reason: e.to_string(),
-            source: e,
-        })
+    pub fn with_user_agent<S: Into<String>>(mut self, user_agent: S) -> Self {
+        self.user_agent = user_agent.into();
+        self
+    }
+
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.request_timeout = timeout;
+        self
+    }
+
+    pub fn with_connection_timeout(mut self, timeout: Duration) -> Self {
+        self.connection_timeout = timeout;
+        self
+    }
+
+    pub fn with_certificate(mut self, cert: Certificate) -> Self {
+        self.custom_certificates.push(cert);
+        self
+    }
+
+    pub fn with_proxy<S: Into<String>>(mut self, proxy_url: S) -> Self {
+        self.proxy_url = Some(proxy_url.into());
+        self
+    }
+
+    pub fn with_redirects(mut self, max_redirects: u32) -> Self {
+        self.follow_redirects = max_redirects;
+        self
+    }
+
+    pub fn with_cookies(mut self, enable: bool) -> Self {
+        self.save_cookies = enable;
+        self
+    }
+
+    pub fn header_mut(&mut self) -> HeaderMut<'_> {
+        HeaderMut::new(&mut self.default_headers)
     }
 }

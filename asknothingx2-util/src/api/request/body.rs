@@ -1,9 +1,9 @@
-use std::{fmt, pin::Pin};
+use std::{fmt, io, pin::Pin};
 
 use bytes::Bytes;
 use reqwest::{multipart, Body, RequestBuilder};
 
-use super::error::StreamError;
+use crate::api::error::{self, Error};
 
 pub enum RequestBody {
     Static(&'static str),
@@ -35,7 +35,7 @@ pub enum RequestBody {
     },
 
     #[cfg(feature = "stream")]
-    Stream(Pin<Box<dyn futures_util::Stream<Item = Result<Bytes, StreamError>> + Send + Sync>>),
+    Stream(Pin<Box<dyn futures_util::Stream<Item = Result<Bytes, Error>> + Send + Sync>>),
     #[cfg(feature = "stream")]
     IoStream(
         Pin<Box<dyn futures_util::Stream<Item = Result<Bytes, std::io::Error>> + Send + Sync>>,
@@ -70,10 +70,9 @@ impl RequestBody {
         Self::Json(value)
     }
 
-    pub fn from_json_serializable<T: serde::Serialize>(
-        value: &T,
-    ) -> Result<Self, serde_json::Error> {
-        let json_value = serde_json::to_value(value)?;
+    pub fn from_json_serializable<T: serde::Serialize>(value: &T) -> Result<Self, Error> {
+        let json_value =
+            serde_json::to_value(value).map_err(error::serialization::json_generate)?;
         Ok(Self::Json(json_value))
     }
 
@@ -125,15 +124,19 @@ impl RequestBody {
     }
 
     #[cfg(feature = "stream")]
-    pub async fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, StreamError> {
+    pub async fn from_file_path<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Error> {
         use tokio::fs::File;
 
-        use super::error::FileOperation;
-
         let path_ref = path.as_ref();
-        let file = File::open(path_ref)
-            .await
-            .map_err(|e| StreamError::file_error(path_ref, FileOperation::Open, e))?;
+        let file = File::open(path_ref).await.map_err(|e| {
+            if e.kind() == io::ErrorKind::NotFound {
+                error::io::file_not_found(path_ref)
+            } else if e.kind() == io::ErrorKind::PermissionDenied {
+                error::io::permission_denied(path_ref)
+            } else {
+                error::io::operation(e)
+            }
+        })?;
         Ok(Self::from_file(file))
     }
 
@@ -141,15 +144,23 @@ impl RequestBody {
     pub async fn from_file_path_buffered<P: AsRef<std::path::Path>>(
         path: P,
         buffer_size: usize,
-    ) -> Result<Self, StreamError> {
+    ) -> Result<Self, Error> {
         use tokio::fs::File;
 
-        use super::error::FileOperation;
+        if buffer_size == 0 {
+            return Err(error::config::invalid("buffer size cannot be zero"));
+        }
 
         let path_ref = path.as_ref();
-        let file = File::open(path_ref)
-            .await
-            .map_err(|e| StreamError::file_error(path_ref, FileOperation::Open, e))?;
+        let file = File::open(path_ref).await.map_err(|e| {
+            if e.kind() == io::ErrorKind::NotFound {
+                error::io::file_not_found(path_ref)
+            } else if e.kind() == io::ErrorKind::PermissionDenied {
+                error::io::permission_denied(path_ref)
+            } else {
+                error::io::operation(e)
+            }
+        })?;
         Ok(Self::from_file_buffered(file, buffer_size))
     }
 
@@ -159,27 +170,19 @@ impl RequestBody {
     }
 
     #[cfg(feature = "stream")]
-    pub fn from_command_output(mut command: tokio::process::Command) -> Result<Self, StreamError> {
+    pub fn from_command_output(mut command: tokio::process::Command) -> Result<Self, Error> {
         use std::{io, process::Stdio};
 
-        use super::error::ProcessOperation;
-
         let command_str = format!("{command:?}");
-        let mut child =
-            command
-                .stdout(Stdio::piped())
-                .spawn()
-                .map_err(|e| StreamError::Process {
-                    command: command_str.clone(),
-                    operation: ProcessOperation::Spawn,
-                    source: e,
-                })?;
+        let mut child = command
+            .stdout(Stdio::piped())
+            .spawn()
+            .map_err(error::process::spawn)?;
 
-        let stdout = child.stdout.take().ok_or_else(|| StreamError::Process {
-            command: command_str.clone(),
-            operation: ProcessOperation::ReadStdout,
-            source: io::Error::other("Failed to capture stdout"),
-        })?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| error::process::spawn(io::Error::other("failed to capture stdout")))?;
 
         Ok(Self::ProcessOutput {
             command: command_str,
@@ -191,7 +194,7 @@ impl RequestBody {
     #[cfg(feature = "stream")]
     pub fn from_stream<S>(stream: S) -> Self
     where
-        S: futures_util::Stream<Item = Result<Bytes, StreamError>> + Send + Sync + 'static,
+        S: futures_util::Stream<Item = Result<Bytes, Error>> + Send + Sync + 'static,
     {
         Self::Stream(Box::pin(stream))
     }
@@ -264,19 +267,56 @@ impl RequestBody {
         }
     }
 
-    pub fn into_reqwest_body(self, client: RequestBuilder) -> RequestBuilder {
+    pub fn has_known_length(&self) -> bool {
+        self.content_length().is_some()
+    }
+
+    pub fn body_type(&self) -> &'static str {
         match self {
+            Self::Static(_) => "static",
+            Self::String(_) => "string",
+            Self::Bytes(_) => "bytes",
+            Self::Vec(_) => "vector",
+            Self::Json(_) => "json",
+            Self::Form(_) => "form",
+            Self::Multipart(_) => "multipart",
+            Self::Custom(_) => "custom",
+            Self::Empty => "empty",
+            #[cfg(feature = "stream")]
+            Self::File(_) => "file",
+            #[cfg(feature = "stream")]
+            Self::BufferedFile { .. } => "buffered_file",
+            #[cfg(feature = "stream")]
+            Self::AsyncRead(_) => "async_read",
+            #[cfg(feature = "stream")]
+            Self::TcpStream(_) => "tcp_stream",
+            #[cfg(feature = "stream")]
+            Self::ProcessOutput { .. } => "process_output",
+            #[cfg(feature = "stream")]
+            Self::Stream(_) => "stream",
+            #[cfg(feature = "stream")]
+            Self::IoStream(_) => "io_stream",
+            #[cfg(feature = "stream")]
+            Self::BytesIterator(_) => "bytes_iterator",
+            #[cfg(feature = "stream")]
+            Self::CodecReader { .. } => "codec_reader",
+        }
+    }
+
+    pub fn into_reqwest_body(self, client: RequestBuilder) -> Result<RequestBuilder, Error> {
+        let builder = match self {
             Self::Static(s) => client.body(s),
             Self::String(s) => client.body(s),
             Self::Bytes(b) => client.body(b),
             Self::Vec(v) => client.body(v),
             Self::Json(j) => {
-                let json_string = serde_json::to_string(&j).expect("Failed to serialize JSON");
+                let json_string =
+                    serde_json::to_string(&j).map_err(error::serialization::json_generate)?;
                 client.body(json_string)
             }
             Self::Form(f) => {
                 let form_string =
-                    serde_urlencoded::to_string(&f).expect("Failed to serialize form data");
+                    serde_urlencoded::to_string(&f).map_err(error::serialization::url_encode)?;
                 client.body(form_string)
             }
             Self::Multipart(m) => client.multipart(m),
@@ -289,7 +329,7 @@ impl RequestBody {
                 use tokio_util::io::ReaderStream;
 
                 let stream = ReaderStream::new(file);
-                let stream = stream.map_err(|e| StreamError::io_error("file_read", e));
+                let stream = stream.map_err(error::io::operation);
                 client.body(Body::wrap_stream(stream))
             }
 
@@ -301,7 +341,7 @@ impl RequestBody {
 
                 let buffered_reader = BufReader::with_capacity(buffer_size, file);
                 let stream = ReaderStream::new(buffered_reader);
-                let stream = stream.map_err(|e| StreamError::io_error("buffered_file_read", e));
+                let stream = stream.map_err(error::io::operation);
                 client.body(Body::wrap_stream(stream))
             }
 
@@ -311,20 +351,17 @@ impl RequestBody {
                 use tokio_util::io::ReaderStream;
 
                 let stream = ReaderStream::new(reader);
-                let stream = stream.map_err(|e| StreamError::io_error("async_read", e));
+                let stream = stream.map_err(error::io::operation);
                 client.body(Body::wrap_stream(stream))
             }
 
             #[cfg(feature = "stream")]
             Self::TcpStream(tcp) => {
-                use crate::api::request::error::NetworkOperation;
                 use futures_util::TryStreamExt;
                 use tokio_util::io::ReaderStream;
 
                 let stream = ReaderStream::new(tcp);
-                let stream = stream.map_err(|e| {
-                    StreamError::network_error("tcp_stream", NetworkOperation::Read, e)
-                });
+                let stream = stream.map_err(error::network::connect);
                 client.body(Body::wrap_stream(stream))
             }
 
@@ -334,7 +371,7 @@ impl RequestBody {
                 use tokio_util::io::ReaderStream;
 
                 let stream = ReaderStream::new(stdout);
-                let stream = stream.map_err(|e| StreamError::io_error("command_output", e));
+                let stream = stream.map_err(error::process::spawn);
                 client.body(Body::wrap_stream(stream))
             }
 
@@ -344,7 +381,7 @@ impl RequestBody {
             Self::IoStream(stream) => {
                 use futures_util::TryStreamExt;
 
-                let stream = stream.map_err(StreamError::from);
+                let stream = stream.map_err(error::io::operation);
                 client.body(Body::wrap_stream(stream))
             }
 
@@ -352,7 +389,7 @@ impl RequestBody {
             Self::BytesIterator(bytes) => {
                 use futures_util::stream;
 
-                let iter_stream = stream::iter(bytes.into_iter().map(Ok::<Bytes, StreamError>));
+                let iter_stream = stream::iter(bytes.into_iter().map(Ok::<Bytes, Error>));
                 client.body(Body::wrap_stream(iter_stream))
             }
 
@@ -365,7 +402,7 @@ impl RequestBody {
                 match codec_type {
                     CodecType::Bytes => {
                         let framed = FramedRead::new(reader, BytesCodec::new());
-                        let stream = framed.map_err(|e| StreamError::io_error("bytes_codec", e));
+                        let stream = framed.map_err(error::io::operation);
                         client.body(Body::wrap_stream(stream))
                     }
                     CodecType::Lines => {
@@ -379,7 +416,7 @@ impl RequestBody {
                                     }
                                     LinesCodecError::Io(e) => e,
                                 };
-                                Err(StreamError::io_error("lines_codec", io_error))
+                                Err(error::io::operation(io_error))
                             }
                         });
                         client.body(Body::wrap_stream(stream))
@@ -387,22 +424,25 @@ impl RequestBody {
                     CodecType::Json => {
                         let framed = FramedRead::new(reader, LinesCodec::new());
                         let stream = framed.map(|result| {
-                            result.map(|line| Bytes::from(line + "\n")).map_err(|e| {
-                                StreamError::io_error("json_codec", io::Error::other(e.to_string()))
-                            })
+                            result
+                                .map(|line| Bytes::from(line + "\n"))
+                                .map_err(|e| error::io::operation(io::Error::other(e)))
                         });
                         client.body(Body::wrap_stream(stream))
                     }
                     CodecType::Custom(name) => {
                         let framed = FramedRead::new(reader, BytesCodec::new());
                         let stream = framed.map_err(move |e| {
-                            StreamError::io_error(format!("custom_codec_{name}"), e)
+                            error::io::operation(io::Error::other(format!(
+                                "Custom codec '{name}' error: {e}",
+                            )))
                         });
                         client.body(Body::wrap_stream(stream))
                     }
                 }
             }
-        }
+        };
+        Ok(builder)
     }
 }
 

@@ -3,6 +3,8 @@ use std::fmt;
 use base64::{engine::general_purpose, Engine as _};
 use http::HeaderValue;
 
+use super::{error, Error};
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum AuthScheme<'a> {
     /// Basic authentication - RFC 7617
@@ -158,7 +160,7 @@ impl<'a> AuthScheme<'a> {
         }
     }
 
-    pub fn to_header_value(self) -> Result<HeaderValue, AuthError> {
+    pub fn to_header_value(self) -> Result<HeaderValue, Error> {
         let auth_string = match self {
             AuthScheme::Basic { username, password } => {
                 let credentials = format!("{username}:{password}");
@@ -200,8 +202,7 @@ impl<'a> AuthScheme<'a> {
            
         };
 
-        HeaderValue::from_str(&auth_string)
-            .map_err(|e| AuthError::InvalidHeaderValue(e.to_string()))
+        HeaderValue::from_str(&auth_string).map_err(|_|error::auth::invalid_scheme(auth_string))
     }
 
     pub fn scheme_name(&self) -> &str {
@@ -443,10 +444,4 @@ impl<'a> fmt::Debug for DigestBuilder<'a> {
             .field("nc", &self.nc)
             .finish()
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum AuthError {
-    #[error("Invalid header value: {0}")]
-    InvalidHeaderValue(String),
 }

@@ -12,7 +12,7 @@ use crate::api::{
     AuthScheme,
 };
 
-use super::request::HeaderError;
+use super::{error, Error};
 
 pub mod headers {
     use http::HeaderName;
@@ -41,25 +41,17 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
-    pub fn header_str(&mut self, key: HeaderName, value: &str) -> Result<&mut Self, HeaderError> {
-        let val = HeaderValue::from_str(value).map_err(|e| HeaderError::InvalidHeaderValue {
-            name: key.to_string(),
-            value: value.to_string(),
-            reason: e.to_string(),
-        })?;
+    pub fn header_str(&mut self, key: HeaderName, value: &str) -> Result<&mut Self, Error> {
+        let val = HeaderValue::from_str(value).map_err(error::http::invalid_header)?;
 
         self.header.insert(key, val);
         Ok(self)
     }
 
-    pub fn append(
-        &mut self,
-        key: HeaderName,
-        value: HeaderValue,
-    ) -> Result<&mut Self, http::Error> {
+    pub fn append(&mut self, key: HeaderName, value: HeaderValue) -> &mut Self {
         self.header.append(key, value);
 
-        Ok(self)
+        self
     }
 
     pub fn extend(&mut self, headers: HeaderMap) -> &mut Self {
@@ -72,13 +64,13 @@ impl<'a> HeaderMut<'a> {
         self.header.is_empty()
     }
 
-    /// Client-Id: <id>
-    pub fn client_id(&mut self, id: &str) -> Result<&mut Self, HeaderError> {
+    /// Client-Id: id
+    pub fn client_id(&mut self, id: &str) -> Result<&mut Self, Error> {
         self.header_str(headers::CLIENT_ID, id)
     }
 
-    /// User-Agent: <agent>
-    pub fn user_agent(&mut self, agent: &str) -> Result<&mut Self, HeaderError> {
+    /// User-Agent: agent
+    pub fn user_agent(&mut self, agent: &str) -> Result<&mut Self, Error> {
         self.header_str(USER_AGENT, agent)
     }
 
@@ -89,28 +81,28 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
-    /// Cache-Control: <value>
-    pub fn cache_control(&mut self, value: &str) -> Result<&mut Self, HeaderError> {
+    /// Cache-Control: value
+    pub fn cache_control(&mut self, value: &str) -> Result<&mut Self, Error> {
         self.header_str(CACHE_CONTROL, value)
     }
 
-    /// X-API-Key: <key>
-    pub fn api_key(&mut self, key: &str) -> Result<&mut Self, HeaderError> {
+    /// X-API-Key: key
+    pub fn api_key(&mut self, key: &str) -> Result<&mut Self, Error> {
         self.header_str(headers::X_API_KEY, key)
     }
 
-    /// X-Request-ID: <id>
-    pub fn request_id(&mut self, id: &str) -> Result<&mut Self, HeaderError> {
+    /// X-Request-ID: id
+    pub fn request_id(&mut self, id: &str) -> Result<&mut Self, Error> {
         self.header_str(headers::X_REQUEST_ID, id)
     }
 
-    /// Origin: <origin>
-    pub fn origin(&mut self, origin: &str) -> Result<&mut Self, HeaderError> {
+    /// Origin: origin
+    pub fn origin(&mut self, origin: &str) -> Result<&mut Self, Error> {
         self.header_str(ORIGIN, origin)
     }
 
-    /// Referer: <referer>
-    pub fn referer(&mut self, referer: &str) -> Result<&mut Self, HeaderError> {
+    /// Referer: referer
+    pub fn referer(&mut self, referer: &str) -> Result<&mut Self, Error> {
         self.header_str(REFERER, referer)
     }
 
@@ -122,8 +114,8 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
-    /// Access-Control-Allow-Origin: <origin>
-    pub fn cors_allow_origin(&mut self, origin: &str) -> Result<&mut Self, HeaderError> {
+    /// Access-Control-Allow-Origin: origin
+    pub fn cors_allow_origin(&mut self, origin: &str) -> Result<&mut Self, Error> {
         self.header_str(ACCESS_CONTROL_ALLOW_ORIGIN, origin)
     }
 
@@ -172,10 +164,6 @@ impl<'a> HeaderMut<'a> {
     pub fn json_api(&mut self) -> &mut Self {
         self.accept_json().content_type_json()
     }
-
-    // pub fn build(self) -> HeaderMap {
-    //     self.header
-    // }
 }
 
 impl<'a> HeaderMut<'a> {
@@ -206,7 +194,7 @@ impl<'a> HeaderMut<'a> {
     }
 
     /// ACCEPT: multi items
-    pub fn accept_mulity(&mut self, items: &[&str]) -> Result<&mut Self, HeaderError> {
+    pub fn accept_mulity(&mut self, items: &[&str]) -> Result<&mut Self, Error> {
         self.header_str(ACCEPT, &items.join(","))
     }
 
@@ -224,8 +212,8 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
-    /// Accept-Language: <lang>
-    pub fn accept_language(&mut self, lang: &str) -> Result<&mut Self, HeaderError> {
+    /// Accept-Language: lang
+    pub fn accept_language(&mut self, lang: &str) -> Result<&mut Self, Error> {
         self.header_str(ACCEPT_LANGUAGE, lang)
     }
 }

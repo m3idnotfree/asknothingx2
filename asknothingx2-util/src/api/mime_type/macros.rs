@@ -15,7 +15,7 @@ macro_rules! case_insensitive_match {
         )*
 
         else {
-            Err(crate::api::mime_type::Error::Unsupported($input.to_string()))
+            Err(crate::api::error::content::unsupported($input))
         }
     };
 }
@@ -38,7 +38,7 @@ macro_rules! define_mime_type {
     ) => {
         use std::str::FromStr;
 
-        use crate::api::mime_type::{MimeType, Error};
+        use crate::api::{error, Error, mime_type::MimeType};
         use http::HeaderValue;
 
         $(#[$enum_meta])*
@@ -77,7 +77,9 @@ macro_rules! define_mime_type {
             }
 
             pub fn from_header_value(value: &HeaderValue) -> Result<Self, Error> {
-                let content_type = value.to_str().map_err(|_| Error::InvalidUtf8)?;
+                let content_type = value.to_str()
+                    .map_err(|_| error::content::invalid_type("invalid UTF-8 in header value"))?;
+
                 Self::from_str(content_type)
             }
 
@@ -144,6 +146,13 @@ macro_rules! define_mime_type {
             }
         }
 
+
+        impl From<$enum_name> for &'static str {
+            fn from(value: $enum_name) -> Self {
+                value.as_static()
+            }
+        }
+
         impl From<$enum_name> for HeaderValue {
             fn from(value: $enum_name) -> Self {
                 value.to_header_value()
@@ -179,10 +188,21 @@ macro_rules! define_mime_type {
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 if s.is_empty() {
-                    return Err(Error::Empty);
+                    return Err(error::content::invalid_type("empty MIME type"));
                 }
 
                 let mime_type = s.split(';').next().unwrap_or(s).trim();
+
+                // Validate basic MIME type format
+                if !mime_type.contains('/') {
+                    return Err(error::content::invalid_type(
+                        format!("invalid MIME type format: {}", mime_type)
+                    ));
+                }
+
+                if mime_type.len() > 200 {
+                    return Err(error::content::invalid_type("MIME type too long"));
+                }
 
                 case_insensitive_match!(mime_type, {
                     $(
