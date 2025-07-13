@@ -139,13 +139,11 @@ macro_rules! define_mime_type {
             }
         }
 
-
         impl From<$enum_name> for String {
             fn from(value: $enum_name) -> Self {
                 value.to_string()
             }
         }
-
 
         impl From<$enum_name> for &'static str {
             fn from(value: $enum_name) -> Self {
@@ -161,13 +159,25 @@ macro_rules! define_mime_type {
 
         impl PartialEq<$enum_name> for String {
             fn eq(&self, other: &$enum_name) -> bool {
-                self.as_str().eq_ignore_ascii_case(other.as_str())
+                self.eq_ignore_ascii_case(other.as_str())
+            }
+        }
+
+        impl PartialEq<String> for $enum_name {
+            fn eq(&self, other: &String) -> bool {
+                self.as_str().eq_ignore_ascii_case(other)
             }
         }
 
         impl PartialEq<$enum_name> for &str {
             fn eq(&self, other: &$enum_name) -> bool {
                 self.eq_ignore_ascii_case(other.as_str())
+            }
+        }
+
+        impl PartialEq<&str> for $enum_name {
+            fn eq(&self, other: &&str) -> bool {
+                self.as_str().eq_ignore_ascii_case(*other)
             }
         }
 
@@ -220,6 +230,113 @@ macro_rules! define_mime_type {
             }
         }
 
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn mime_type() {
+                $(
+                    assert_eq!(
+                        $enum_name::from_str($mime_type).unwrap(),
+                        $enum_name::$variant
+                    );
+
+                    assert_eq!(
+                        $enum_name::from_str(&$mime_type.to_uppercase()).unwrap(),
+                        $enum_name::$variant
+                    );
+
+                    let with_params = format!("{}; charset=utf-8", $mime_type);
+                    assert_eq!(
+                        $enum_name::from_str(&with_params).unwrap(),
+                        $enum_name::$variant
+                    );
+
+                    $(
+                        $(
+                            assert_eq!(
+                                $enum_name::from_str($alias).unwrap(),
+                                $enum_name::$variant
+                            );
+                        )*
+                    )?
+                )*
+            }
+
+            #[test]
+            fn extension() {
+                $(
+                    $(
+                        assert_eq!(
+                            $enum_name::from_extension($ext),
+                            Some($enum_name::$variant)
+                        );
+
+                        assert_eq!(
+                            $enum_name::from_extension(&$ext.to_uppercase()),
+                            Some($enum_name::$variant)
+                        );
+                    )*
+                )*
+            }
+
+            #[test]
+            fn header_value_conversion() {
+                $(
+                    let header_value = $enum_name::$variant.to_header_value();
+                    assert_eq!(header_value.to_str().unwrap(), $mime_type);
+
+                    let parsed = $enum_name::from_header_value(&header_value).unwrap();
+                    assert_eq!(parsed, $enum_name::$variant);
+                )*
+            }
+
+            #[test]
+            fn string_conversions() {
+                $(
+                    let string: String = $enum_name::$variant.into();
+                    assert_eq!(string, $mime_type);
+
+                    let static_str: &'static str = $enum_name::$variant.into();
+                    assert_eq!(static_str, $mime_type);
+                )*
+            }
+
+            #[test]
+            fn comparisons() {
+                $(
+                    assert_eq!($mime_type, $enum_name::$variant);
+                    assert_eq!($enum_name::$variant, $mime_type);
+                    assert_eq!($mime_type.to_string(), $enum_name::$variant);
+                    assert_eq!($enum_name::$variant, $mime_type.to_string());
+                    assert_eq!(MimeType::$enum_name($enum_name::$variant), $enum_name::$variant);
+                    assert_eq!($enum_name::$variant, MimeType::$enum_name($enum_name::$variant));
+                )*
+            }
+
+            #[test]
+            fn invalid_mime_types() {
+                assert!($enum_name::from_str("").is_err());
+                assert!($enum_name::from_str("invalid").is_err());
+                assert!($enum_name::from_str("invalid/unknown").is_err());
+            }
+
+            #[test]
+            fn primary_extensions() {
+                $(
+                    let primary = $enum_name::$variant.primary_extension();
+                    let extensions = $enum_name::$variant.extensions();
+
+                    if !extensions.is_empty() {
+                        assert_eq!(primary, Some(extensions[0]));
+                    } else {
+                        assert_eq!(primary, None);
+                    }
+                )*
+            }
+        }
 
     };
 }
