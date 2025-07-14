@@ -15,8 +15,8 @@ pub use error::{Error, Kind};
 pub use header_mut::HeaderMut;
 
 // Re-export
-pub use http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
-pub use reqwest::{Client, Error as ReqwestError, RequestBuilder, Response};
+pub use http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
+pub use reqwest::{tls, Client, Error as ReqwestError, RequestBuilder, Response};
 
 use app_type::AppType;
 use url::Url;
