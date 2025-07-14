@@ -282,10 +282,20 @@ macro_rules! define_mime_type {
             fn header_value_conversion() {
                 $(
                     let header_value = $enum_name::$variant.to_header_value();
+                    let mime_type = MimeType::from_header_value(&header_value).unwrap();
+
+                    assert_eq!(header_value, $mime_type);
+                    assert_eq!($mime_type, header_value);
+
+                    assert_eq!(header_value, mime_type);
+                    assert_eq!(mime_type, header_value);
+
                     assert_eq!(header_value.to_str().unwrap(), $mime_type);
+                    assert_eq!(mime_type, $mime_type);
 
                     let parsed = $enum_name::from_header_value(&header_value).unwrap();
                     assert_eq!(parsed, $enum_name::$variant);
+                    assert_eq!($enum_name::$variant, parsed);
                 )*
             }
 

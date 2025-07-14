@@ -640,3 +640,502 @@ fn is_sensitive_key(key: &str) -> bool {
         || key_lower.contains("secret")
         || key_lower.contains("auth")
 }
+
+#[cfg(test)]
+mod tests {
+    use http::Method;
+    use reqwest::{multipart, Client};
+    use serde_json::json;
+
+    use super::RequestBody;
+
+    fn create_test_client() -> (Client, reqwest::RequestBuilder) {
+        let client = Client::builder().build().unwrap();
+        let request_builder = client.request(Method::GET, "http://example.com");
+        (client, request_builder)
+    }
+
+    #[test]
+    fn from_static() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_static("hello");
+        assert!(body.has_known_length());
+        assert_eq!(5, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn from_string() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_string("hello");
+        assert!(body.has_known_length());
+        assert_eq!(5, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "hello"
+        );
+    }
+    #[test]
+    fn from_bytes() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_bytes("hello".as_bytes().into());
+        assert!(body.has_known_length());
+        assert_eq!(5, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            request.body().unwrap().as_bytes().unwrap(),
+            [104, 101, 108, 108, 111]
+        );
+    }
+
+    #[test]
+    fn from_vec() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_vec("hello".as_bytes().to_vec());
+        assert!(body.has_known_length());
+        assert_eq!(5, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            request.body().unwrap().as_bytes().unwrap().to_vec(),
+            [104, 101, 108, 108, 111]
+        );
+    }
+
+    #[test]
+    fn from_json() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_json(json!("hello"));
+        assert!(body.has_known_length());
+        assert_eq!(7, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "\"hello\""
+        );
+    }
+
+    #[test]
+    fn from_json_serializable() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_json_serializable(&json!("hello")).unwrap();
+        assert!(body.has_known_length());
+        assert_eq!(7, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "\"hello\""
+        );
+    }
+
+    #[test]
+    fn from_form() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_form(vec![("key".to_string(), "value".to_string())]);
+        assert!(body.has_known_length());
+        assert_eq!(9, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "key=value"
+        );
+    }
+
+    #[test]
+    fn from_form_pairs() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_form_pairs([("key", "value")]);
+        assert!(body.has_known_length());
+        assert_eq!(9, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            "key=value"
+        );
+    }
+
+    #[test]
+    fn from_multipart() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::from_multipart(multipart::Form::new().text("hello", "my name"));
+        assert!(!body.has_known_length());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        request.unwrap().build().unwrap();
+    }
+
+    #[test]
+    fn empty() {
+        let (_, request_builder) = create_test_client();
+        let body = RequestBody::empty();
+        assert!(body.has_known_length());
+        assert_eq!(0, body.content_length().unwrap());
+
+        let request = body.into_reqwest_body(request_builder);
+
+        assert!(request.is_ok());
+        let request = request.unwrap().build().unwrap();
+        assert_eq!(
+            String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap(),
+            ""
+        );
+    }
+
+    #[cfg(feature = "stream")]
+    mod streams {
+        use std::{
+            io::{self, Cursor, Write},
+            time::Instant,
+        };
+
+        use bytes::Bytes;
+        use futures::stream;
+        use tempfile::NamedTempFile;
+        use tokio::{
+            fs::File,
+            io::{AsyncWriteExt, BufReader},
+            net::{TcpListener, TcpStream},
+            process::Command,
+        };
+
+        use crate::api::{
+            request::{body::tests::create_test_client, CodecType, RequestBody},
+            Error,
+        };
+
+        async fn create_test_file(content: &str) -> NamedTempFile {
+            let mut temp_file = NamedTempFile::new().unwrap();
+            temp_file.write_all(content.as_bytes()).unwrap();
+            temp_file
+        }
+
+        #[tokio::test]
+        async fn from_file() {
+            let content = "Hello, streaming world!";
+            let temp_file = create_test_file(content).await;
+
+            let file = File::open(temp_file.path()).await.unwrap();
+            let body = RequestBody::from_file(file);
+
+            assert_eq!(body.body_type(), "file");
+            assert!(!body.has_known_length());
+            assert!(!body.is_empty());
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_buffered_file_stream() {
+            let content = "This is buffered file content for streaming!";
+            let temp_file = create_test_file(content).await;
+
+            let file = File::open(temp_file.path()).await.unwrap();
+            let buffer_size = 1024;
+            let body = RequestBody::from_file_buffered(file, buffer_size);
+
+            assert_eq!(body.body_type(), "buffered_file");
+            assert!(!body.has_known_length());
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_file_path_convenience_methods() {
+            let content = "File path test content";
+            let temp_file = create_test_file(content).await;
+
+            let body = RequestBody::from_file_path(temp_file.path()).await.unwrap();
+            assert_eq!(body.body_type(), "file");
+
+            let body = RequestBody::from_file_path_buffered(temp_file.path(), 512)
+                .await
+                .unwrap();
+            assert_eq!(body.body_type(), "buffered_file");
+
+            let result = RequestBody::from_file_path("/non/existent/file").await;
+            assert!(result.is_err());
+        }
+
+        #[tokio::test]
+        async fn test_async_read_stream() {
+            let content = "AsyncRead test data";
+            let cursor = Cursor::new(content.as_bytes());
+            let async_cursor = BufReader::new(cursor);
+
+            let body = RequestBody::from_async_read(async_cursor);
+            assert_eq!(body.body_type(), "async_read");
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_bytes_iterator() {
+            let chunks = vec![
+                Bytes::from("chunk1"),
+                Bytes::from("chunk2"),
+                Bytes::from("chunk3"),
+            ];
+            let total_size = chunks.iter().map(|b| b.len()).sum::<usize>() as u64;
+
+            let body = RequestBody::from_bytes_iter(chunks.clone());
+
+            assert_eq!(body.body_type(), "bytes_iterator");
+            assert!(body.has_known_length());
+            assert_eq!(body.content_length().unwrap(), total_size);
+            assert!(!body.is_empty());
+
+            let empty_body = RequestBody::from_bytes_iter(Vec::<Bytes>::new());
+            assert!(empty_body.is_empty());
+            assert_eq!(empty_body.content_length().unwrap(), 0);
+        }
+
+        #[tokio::test]
+        async fn test_custom_stream() {
+            let data = vec![
+                Ok(Bytes::from("stream")),
+                Ok(Bytes::from(" data")),
+                Ok(Bytes::from(" test")),
+            ];
+            let test_stream = stream::iter(data);
+
+            let body = RequestBody::from_stream(test_stream);
+            assert_eq!(body.body_type(), "stream");
+            assert!(!body.has_known_length());
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_io_stream() {
+            let data = vec![
+                Ok(Bytes::from("io")),
+                Ok(Bytes::from(" stream")),
+                Ok(Bytes::from(" test")),
+            ];
+            let io_stream = stream::iter(data);
+
+            let body = RequestBody::from_io_stream(io_stream);
+            assert_eq!(body.body_type(), "io_stream");
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_codec_reader_bytes() {
+            let content = "bytes codec test data";
+            let cursor = Cursor::new(content.as_bytes());
+            let async_cursor = BufReader::new(cursor);
+
+            let body = RequestBody::from_bytes_framed(async_cursor);
+            assert_eq!(body.body_type(), "codec_reader");
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_codec_reader_lines() {
+            let content = "line1\nline2\nline3\n";
+            let cursor = Cursor::new(content.as_bytes());
+            let async_cursor = BufReader::new(cursor);
+
+            let body = RequestBody::from_framed_read(async_cursor, CodecType::Lines);
+            assert_eq!(body.body_type(), "codec_reader");
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_codec_reader_json() {
+            let content = r#"{"key": "value1"}
+{"key": "value2"}
+{"key": "value3"}"#;
+            let cursor = Cursor::new(content.as_bytes());
+            let async_cursor = BufReader::new(cursor);
+
+            let body = RequestBody::from_framed_read(async_cursor, CodecType::Json);
+            assert_eq!(body.body_type(), "codec_reader");
+        }
+
+        #[tokio::test]
+        async fn test_codec_reader_custom() {
+            let content = "custom codec data";
+            let cursor = Cursor::new(content.as_bytes());
+            let async_cursor = BufReader::new(cursor);
+
+            let body =
+                RequestBody::from_framed_read(async_cursor, CodecType::Custom("test".to_string()));
+            assert_eq!(body.body_type(), "codec_reader");
+        }
+
+        #[tokio::test]
+        async fn test_tcp_stream() {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let addr = listener.local_addr().unwrap();
+
+            tokio::spawn(async move {
+                if let Ok((mut socket, _)) = listener.accept().await {
+                    let _ = AsyncWriteExt::write_all(&mut socket, b"TCP stream test data").await;
+                }
+            });
+
+            let tcp_stream = TcpStream::connect(addr).await.unwrap();
+            let body = RequestBody::from_tcp_stream(tcp_stream);
+
+            assert_eq!(body.body_type(), "tcp_stream");
+            assert!(!body.has_known_length());
+        }
+
+        #[tokio::test]
+        async fn test_process_output() {
+            let mut command = Command::new("echo");
+            command.arg("process output test");
+
+            let body = RequestBody::from_command_output(command).unwrap();
+            assert_eq!(body.body_type(), "process_output");
+            assert!(!body.has_known_length());
+
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_process_output_invalid_command() {
+            let command = Command::new("/non/existent/command");
+            let result = RequestBody::from_command_output(command);
+            assert!(result.is_err());
+        }
+
+        #[tokio::test]
+        async fn test_stream_error_handling() {
+            let error_stream = stream::iter(vec![
+                Ok(Bytes::from("data")),
+                Err(Error::from(io::Error::new(
+                    io::ErrorKind::BrokenPipe,
+                    "test error",
+                ))),
+            ]);
+
+            let body = RequestBody::from_stream(error_stream);
+            let (_, request_builder) = create_test_client();
+            let result = body.into_reqwest_body(request_builder);
+            assert!(result.is_ok());
+        }
+
+        #[tokio::test]
+        async fn test_buffered_file_zero_buffer_size() {
+            let temp_file = create_test_file("test").await;
+            let result = RequestBody::from_file_path_buffered(temp_file.path(), 0).await;
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_codec_type_display() {
+            assert_eq!(CodecType::Bytes.to_string(), "bytes");
+            assert_eq!(CodecType::Lines.to_string(), "lines");
+            assert_eq!(CodecType::Json.to_string(), "json");
+            assert_eq!(
+                CodecType::Custom("custom".to_string()).to_string(),
+                "custom"
+            );
+        }
+
+        #[test]
+        fn test_codec_type_equality() {
+            assert_eq!(CodecType::Bytes, CodecType::Bytes);
+            assert_eq!(CodecType::Lines, CodecType::Lines);
+            assert_eq!(CodecType::Json, CodecType::Json);
+            assert_eq!(
+                CodecType::Custom("test".to_string()),
+                CodecType::Custom("test".to_string())
+            );
+            assert_ne!(CodecType::Bytes, CodecType::Lines);
+        }
+
+        #[tokio::test]
+        async fn test_stream_body_display_debug() {
+            let chunks = vec![Bytes::from("test1"), Bytes::from("test2")];
+            let body = RequestBody::from_bytes_iter(chunks);
+
+            let display_str = body.to_string();
+            assert!(display_str.contains("bytes iterator"));
+            assert!(display_str.contains("2 chunks"));
+            assert!(display_str.contains("10 bytes"));
+
+            let debug_str = format!("{body:?}");
+            assert!(debug_str.contains("BytesIterator"));
+        }
+
+        #[tokio::test]
+        async fn test_large_stream_performance() {
+            let large_data: Vec<Bytes> = (0..1000)
+                .map(|i| Bytes::from(format!("chunk_{i:04}")))
+                .collect();
+
+            let total_size = large_data.iter().map(|b| b.len()).sum::<usize>();
+            let body = RequestBody::from_bytes_iter(large_data);
+
+            assert_eq!(body.content_length().unwrap(), total_size as u64);
+
+            let (_, request_builder) = create_test_client();
+            let start = Instant::now();
+            let result = body.into_reqwest_body(request_builder);
+            let duration = start.elapsed();
+
+            assert!(result.is_ok());
+            assert!(duration.as_millis() < 100);
+        }
+    }
+}
