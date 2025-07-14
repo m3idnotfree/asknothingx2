@@ -29,6 +29,15 @@ mod custom_headers {
     pub const UPGRADE_INSECURE_REQUESTS: &str = "upgrade-insecure-requests";
 }
 
+/// HTTP client configuration for different application types and environments.
+///
+/// This struct provides pre-configured settings optimized for various use cases:
+/// - CLI tools: Simple, reliable requests with minimal overhead
+/// - Web apps: Balanced performance and reliability for browser-like behavior
+/// - Production: High-performance, secure configuration for server environments
+/// - Development: Permissive settings for testing and debugging
+/// - API Gateway: High-throughput configuration for service-to-service communication
+/// - Web Scraping: Browser-like headers and behavior for scraping websites
 #[derive(Debug, Clone)]
 pub struct Config {
     pub app_type: AppType,
@@ -67,6 +76,14 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates a configuration optimized for command-line tools.
+    ///
+    /// Features:
+    /// - Conservative timeouts (60s request, 10s connection)
+    /// - Single connection to avoid overwhelming servers
+    /// - Basic Accept header for general content types
+    /// - Minimal redirect following (5 max)
+    /// - No cookie persistence
     pub fn for_cli_tools() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
@@ -96,6 +113,14 @@ impl Config {
         }
     }
 
+    /// Creates a configuration optimized for web applications.
+    ///
+    /// Features:
+    /// - Moderate timeouts (30s request, 5s connection)
+    /// - Multiple connections (10) for concurrent requests
+    /// - JSON and compression support in Accept headers
+    /// - Connection keepalive with dead connection detection
+    /// - TLS 1.2 minimum with HTTP/2 preference
     pub fn for_web_apps() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -131,7 +156,15 @@ impl Config {
             async_dns: true,
         }
     }
-
+    /// Creates a configuration optimized for production server environments.
+    ///
+    /// Features:
+    /// - Aggressive timeouts (10s request, 3s connection) for fast failure
+    /// - High connection limit (50) for throughput
+    /// - Long connection keepalive (5 minutes) for efficiency
+    /// - HTTPS required with TLS 1.3 minimum
+    /// - HTTP/2 only for modern performance
+    /// - No referer headers for security
     pub fn for_production() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, Application::Json.to_header_value());
@@ -166,6 +199,14 @@ impl Config {
         }
     }
 
+    /// Creates a configuration optimized for development and testing.
+    ///
+    /// Features:
+    /// - Very short timeouts (5s request, 2s connection) for fast iteration
+    /// - Single connection to avoid connection pool issues
+    /// - Permissive TLS settings (accepts invalid certs) for local testing
+    /// - No redirects to catch redirect issues immediately
+    /// - Development marker header for server identification
     pub fn for_development() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, HeaderValue::from_static("*/*"));
@@ -199,6 +240,14 @@ impl Config {
         }
     }
 
+    /// Creates a configuration optimized for API gateway services.
+    ///
+    /// Features:
+    /// - Very fast timeouts (5s request, 1s connection) for low latency
+    /// - High connection limit (100) for maximum throughput
+    /// - Long keepalive (10 minutes) for service-to-service efficiency
+    /// - TLS 1.3 with HTTP/2 only for modern performance
+    /// - No redirects (APIs should return direct responses)
     pub fn for_api_gateway() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(ACCEPT, Application::Json.to_header_value());
@@ -228,6 +277,14 @@ impl Config {
         }
     }
 
+    /// Creates a configuration optimized for web scraping.
+    ///
+    /// Features:
+    /// - Browser-like headers (HTML, language, encoding preferences)
+    /// - Firefox user agent to appear as a real browser
+    /// - Cookie persistence to maintain session state
+    /// - Privacy headers (DNT, upgrade insecure requests)
+    /// - Moderate connection limits to avoid rate limiting
     pub fn for_web_scraping() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -270,6 +327,29 @@ impl Config {
         }
     }
 
+    /// Builds a reqwest Client from this configuration.
+    ///
+    /// # Returns
+    /// - `Ok(Client)` if the configuration is valid and the client was built successfully
+    /// - `Err(Error)` if there are configuration conflicts or invalid settings
+    ///
+    /// # Errors
+    /// - Invalid timeout values (zero duration)
+    /// - Conflicting security settings (require_https with invalid cert acceptance)
+    /// - Invalid proxy URL format
+    /// - Too many redirects (>20, prevents infinite loops)
+    /// - Reqwest client builder failures
+    ///
+    /// # Examples
+    /// ```rust
+    /// use asknothingx2_util::api::Config;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = Config::for_web_apps().build_client()?;
+    /// let response = client.get("https://api.example.com").send().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn build_client(self) -> Result<Client, Error> {
         let mut builder = Client::builder()
             .timeout(self.request_timeout)
@@ -404,5 +484,22 @@ impl Config {
 
     pub fn header_mut(&mut self) -> HeaderMut<'_> {
         HeaderMut::new(&mut self.default_headers)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+    #[test]
+    fn for_cli() {}
+
+    #[test]
+    fn config_build() {
+        Config::for_cli_tools().build_client().unwrap();
+        Config::for_web_apps().build_client().unwrap();
+        Config::for_production().build_client().unwrap();
+        Config::for_development().build_client().unwrap();
+        Config::for_api_gateway().build_client().unwrap();
+        Config::for_web_scraping().build_client().unwrap();
     }
 }
