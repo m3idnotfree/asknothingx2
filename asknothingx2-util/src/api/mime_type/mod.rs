@@ -24,13 +24,17 @@ pub use multipart::Multipart;
 pub use text::Text;
 pub use video::Video;
 
-use std::{fmt, str::FromStr};
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+    str::FromStr,
+};
 
 use http::{header::CONTENT_TYPE, HeaderMap, HeaderValue};
 
 use super::error;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Eq)]
 pub enum MimeType {
     Application(Application),
     Audio(Audio),
@@ -231,6 +235,12 @@ impl From<MimeType> for HeaderValue {
     }
 }
 
+impl PartialEq for MimeType {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_str().eq_ignore_ascii_case(other.as_str())
+    }
+}
+
 impl PartialEq<String> for MimeType {
     fn eq(&self, other: &String) -> bool {
         self.as_str().eq_ignore_ascii_case(other.as_ref())
@@ -267,13 +277,32 @@ impl PartialEq<MimeType> for HeaderValue {
     }
 }
 
+impl Hash for MimeType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_str().to_lowercase().hash(state)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ParsedMimeType<'a> {
-    pub mime_type: &'a str,
+    mime_type: &'a str,
     parameters: &'a str,
+    raw: &'a str,
 }
 
 impl<'a> ParsedMimeType<'a> {
+    pub fn as_str(&self) -> &'a str {
+        self.raw
+    }
+
+    pub fn mime_type(&self) -> Result<MimeType, Error> {
+        MimeType::from_str(self.mime_type)
+    }
+
+    pub fn raw_mime_type(&self) -> &'a str {
+        self.mime_type
+    }
+
     pub fn parse(header_value: &'a HeaderValue) -> Result<Self, Error> {
         let content_type_str = header_value
             .to_str()
@@ -306,6 +335,7 @@ impl<'a> ParsedMimeType<'a> {
             Ok(Self {
                 mime_type,
                 parameters,
+                raw: input,
             })
         } else {
             if !Self::is_valid_mime_type(input) {
@@ -317,6 +347,7 @@ impl<'a> ParsedMimeType<'a> {
             Ok(Self {
                 mime_type: input,
                 parameters: "",
+                raw: input,
             })
         }
     }
@@ -414,6 +445,12 @@ impl<'a> ParsedMimeType<'a> {
 
     pub fn content_type(&self) -> Result<MimeType, Error> {
         MimeType::from_str(self.mime_type)
+    }
+}
+
+impl fmt::Display for ParsedMimeType<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
