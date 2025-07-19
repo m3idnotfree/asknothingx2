@@ -2,8 +2,6 @@ use std::fmt;
 
 use ::http::header::{InvalidHeaderName, InvalidHeaderValue};
 
-use super::app_type::InvalidAppType;
-
 pub struct Error {
     inner: Box<Inner>,
 }
@@ -18,16 +16,6 @@ struct Inner {
 
 #[derive(Debug)]
 pub enum Kind {
-    // Configuration errors
-    ConfigInvalid,
-    ConfigMissing,
-    ConfigLocked,
-
-    // Client registry errors
-    RegistryClientNotFound,
-    RegistryLocked,
-    RegistryInvalidName,
-
     // Request building errors
     RequestBuild,
     RequestInvalid,
@@ -90,12 +78,6 @@ pub enum Kind {
 impl Kind {
     pub fn category(self) -> ErrorCategory {
         match self {
-            Kind::ConfigInvalid | Kind::ConfigMissing | Kind::ConfigLocked => {
-                ErrorCategory::Configuration
-            }
-            Kind::RegistryClientNotFound | Kind::RegistryLocked | Kind::RegistryInvalidName => {
-                ErrorCategory::Registry
-            }
             Kind::RequestBuild | Kind::RequestInvalid | Kind::RequestTimeout => {
                 ErrorCategory::Request
             }
@@ -133,14 +115,6 @@ impl Kind {
 impl fmt::Display for Kind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Kind::ConfigInvalid => f.write_str("invalid configuration"),
-            Kind::ConfigMissing => f.write_str("configuration not found"),
-            Kind::ConfigLocked => f.write_str("configuration is locked"),
-
-            Kind::RegistryClientNotFound => f.write_str("client not found in registry"),
-            Kind::RegistryLocked => f.write_str("registry is locked"),
-            Kind::RegistryInvalidName => f.write_str("invalid client name"),
-
             Kind::RequestBuild => f.write_str("failed to build request"),
             Kind::RequestInvalid => f.write_str("invalid request"),
             Kind::RequestTimeout => f.write_str("request timeout"),
@@ -193,8 +167,6 @@ impl fmt::Display for Kind {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCategory {
-    Configuration,
-    Registry,
     Request,
     Network,
     Http,
@@ -277,13 +249,6 @@ impl Error {
         matches!(
             self.inner.kind,
             Kind::NetworkConnect | Kind::NetworkTimeout | Kind::NetworkDns | Kind::NetworkProxy
-        )
-    }
-
-    pub fn is_config(&self) -> bool {
-        matches!(
-            self.inner.kind,
-            Kind::ConfigInvalid | Kind::ConfigMissing | Kind::ConfigLocked
         )
     }
 
@@ -374,47 +339,6 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         self.inner.source.as_ref().map(|e| &**e as _)
-    }
-}
-
-pub mod config {
-    use super::{Error, Kind};
-
-    pub fn invalid<M: Into<String>>(message: M) -> Error {
-        Error::with_message(Kind::ConfigInvalid, message)
-    }
-}
-
-pub mod registry {
-    use crate::api::app_type::{AppType, InvalidAppType};
-
-    use super::{Error, Kind};
-
-    pub fn client_not_found<N: Into<String>>(name: N) -> Error {
-        Error::with_message(
-            Kind::RegistryClientNotFound,
-            format!("client '{}' not found", name.into()),
-        )
-    }
-
-    pub fn locked() -> Error {
-        Error::new(Kind::RegistryLocked)
-    }
-
-    pub fn invalid_name<N: Into<String>>(name: N) -> Error {
-        Error::with_message(
-            Kind::RegistryInvalidName,
-            format!("invalid app type '{}'", name.into()),
-        )
-    }
-
-    pub fn invalid_app_type(err: InvalidAppType) -> Error {
-        Error::with_source(Kind::RegistryInvalidName, err)
-    }
-
-    pub fn validate_name(name: &str) -> Result<(), Error> {
-        AppType::try_from_str(name).map_err(Error::from)?;
-        Ok(())
     }
 }
 
@@ -658,11 +582,5 @@ impl From<InvalidHeaderName> for Error {
 impl From<InvalidHeaderValue> for Error {
     fn from(err: InvalidHeaderValue) -> Self {
         Error::with_source(Kind::HttpInvalidHeader, err)
-    }
-}
-
-impl From<InvalidAppType> for Error {
-    fn from(value: InvalidAppType) -> Self {
-        Error::with_source(Kind::RegistryInvalidName, value)
     }
 }

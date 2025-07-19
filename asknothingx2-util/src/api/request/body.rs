@@ -148,7 +148,7 @@ impl RequestBody {
         use tokio::fs::File;
 
         if buffer_size == 0 {
-            return Err(error::config::invalid("buffer size cannot be zero"));
+            return Err(error::request::invalid("buffer size cannot be zero"));
         }
 
         let path_ref = path.as_ref();
