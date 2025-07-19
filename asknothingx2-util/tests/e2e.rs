@@ -1,15 +1,16 @@
+#![cfg(all(test, feature = "api", feature = "stream"))]
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
 
 use asknothingx2_util::api::{
-    app_type::AppType,
+    preset,
     request::{RequestBody, RequestParts},
-    Config,
 };
 use bytes::Bytes;
 use http::Method;
+use reqwest::redirect::Policy;
 use url::Url;
 use wiremock::{
     matchers::{method, path},
@@ -51,12 +52,12 @@ async fn get() {
         .mount(&mock_server)
         .await;
 
-    let config = Config::for_web_apps();
+    let config = preset::for_test("test/1.0");
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/test", mock_server.uri())).unwrap();
-    let request_parts = RequestParts::new(Method::GET, url, AppType::WEB);
-    let (request_bueilder, _) = request_parts.into_request_builder(&client).unwrap();
+    let request_parts = RequestParts::new(Method::GET, url);
+    let request_bueilder = request_parts.into_request_builder(&client).unwrap();
 
     let response = request_bueilder.send().await.unwrap();
 
@@ -72,16 +73,17 @@ async fn delay() {
 
     Mock::given(method(Method::GET))
         .and(path("/slow"))
-        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(2)))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(3)))
         .mount(&mock_server)
         .await;
 
-    let config = Config::for_web_apps().with_timeout(Duration::from_millis(500));
+    let config =
+        preset::for_test("test/1.0").timeouts(Duration::from_secs(2), Duration::from_millis(300));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/slow", mock_server.uri())).unwrap();
-    let request_parts = RequestParts::new(Method::GET, url, AppType::WEB);
-    let (request_bueilder, _) = request_parts.into_request_builder(&client).unwrap();
+    let request_parts = RequestParts::new(Method::GET, url);
+    let request_bueilder = request_parts.into_request_builder(&client).unwrap();
 
     let response = request_bueilder.send().await;
 
@@ -124,12 +126,12 @@ async fn redirect() {
         .mount(&mock_server)
         .await;
 
-    let config = Config::for_web_apps().with_redirects(3);
+    let config = preset::for_test("test/1.0").redirect(Policy::limited(3));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/redirect1", mock_server.uri())).unwrap();
-    let request_parts = RequestParts::new(Method::GET, url, AppType::WEB);
-    let (request_bueilder, _) = request_parts.into_request_builder(&client).unwrap();
+    let request_parts = RequestParts::new(Method::GET, url);
+    let request_bueilder = request_parts.into_request_builder(&client).unwrap();
 
     let response = request_bueilder.send().await;
 
@@ -156,14 +158,15 @@ async fn bytes_iter() {
         Bytes::from("chunk3"),
     ];
     let body = RequestBody::from_bytes_iter(chunks.clone());
-    let config = Config::for_web_apps().with_timeout(Duration::from_millis(500));
+    let config = preset::for_test("test/1.0")
+        .timeouts(Duration::from_millis(500), Duration::from_millis(100));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/upload", mock_server.uri())).unwrap();
-    let mut request_parts = RequestParts::new(Method::POST, url, AppType::WEB);
+    let mut request_parts = RequestParts::new(Method::POST, url);
     request_parts.body(body);
 
-    let (request_bueilder, _) = request_parts.into_request_builder(&client).unwrap();
+    let request_bueilder = request_parts.into_request_builder(&client).unwrap();
 
     let response = request_bueilder.send().await.unwrap();
     assert_eq!(response.status(), 200);
@@ -202,14 +205,15 @@ async fn file_stream() {
     let file = tokio::fs::File::open(temp_file.path()).await.unwrap();
 
     let body = RequestBody::from_file(file);
-    let config = Config::for_web_apps().with_timeout(Duration::from_millis(500));
+    let config = preset::for_test("test/1.0")
+        .timeouts(Duration::from_millis(500), Duration::from_millis(100));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/file", mock_server.uri())).unwrap();
-    let mut request_parts = RequestParts::new(Method::POST, url, AppType::WEB);
+    let mut request_parts = RequestParts::new(Method::POST, url);
     request_parts.body(body);
 
-    let (request_bueilder, _) = request_parts.into_request_builder(&client).unwrap();
+    let request_bueilder = request_parts.into_request_builder(&client).unwrap();
 
     let response = request_bueilder.send().await.unwrap();
     assert_eq!(response.status(), 200);

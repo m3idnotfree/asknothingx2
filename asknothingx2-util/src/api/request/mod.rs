@@ -8,12 +8,10 @@ use std::str::FromStr;
 
 use http::{header::CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue, Method};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
-use reqwest::{Client, Request, RequestBuilder, Response};
+use reqwest::{Client, Request, RequestBuilder};
 use url::Url;
 
 use super::{
-    app_type::AppType,
-    client,
     error::{self, Error},
     mime_type::{Application, Text},
     HeaderMut,
@@ -77,12 +75,10 @@ pub struct RequestParts {
     pub body: Option<RequestBody>,
     pub version: Option<http::Version>,
     pub timeout: Option<std::time::Duration>,
-    pub request_id: Option<String>,
-    pub app_type: AppType,
 }
 
 impl RequestParts {
-    pub fn new(method: Method, url: Url, app_type: AppType) -> Self {
+    pub fn new(method: Method, url: Url) -> Self {
         Self {
             method,
             url,
@@ -90,8 +86,6 @@ impl RequestParts {
             body: None,
             version: None,
             timeout: None,
-            request_id: None,
-            app_type,
         }
     }
 
@@ -397,15 +391,7 @@ impl RequestParts {
         self
     }
 
-    pub fn request_id(&mut self, request_id: impl Into<String>) -> &mut Self {
-        self.request_id = Some(request_id.into());
-        self
-    }
-
-    pub fn into_request_builder(
-        self,
-        client: &Client,
-    ) -> Result<(RequestBuilder, Option<String>), Error> {
+    pub fn into_request_builder(self, client: &Client) -> Result<RequestBuilder, Error> {
         let mut builder = client.request(self.method, self.url);
 
         if !self.headers.is_empty() {
@@ -424,23 +410,12 @@ impl RequestParts {
             builder = body.into_reqwest_body(builder)?;
         }
 
-        Ok((builder, self.request_id))
+        Ok(builder)
     }
 
     pub fn into_request(self, client: &Client) -> Result<Request, Error> {
-        let (request_builder, _) = self.into_request_builder(client)?;
+        let request_builder = self.into_request_builder(client)?;
         request_builder.build().map_err(error::request::build)
-    }
-
-    pub async fn send(self) -> Result<Response, Error> {
-        let client = client::get_or_default(&self.app_type).await;
-        let (request_builder, _request_id) = self.into_request_builder(&client)?;
-
-        // if let Some(id) = request_id {
-        //     tracing::debug!("Sending request with ID: {}", id);
-        // }
-
-        request_builder.send().await.map_err(Error::from)
     }
 }
 
