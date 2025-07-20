@@ -202,7 +202,9 @@ impl<'a> AuthScheme<'a> {
            
         };
 
-        HeaderValue::from_str(&auth_string).map_err(|_|error::auth::invalid_scheme(auth_string))
+        let mut value = HeaderValue::from_str(&auth_string).map_err(|_|error::auth::invalid_scheme(auth_string))?;
+        value.set_sensitive(true);
+        Ok(value)
     }
 
     pub fn scheme_name(&self) -> &str {

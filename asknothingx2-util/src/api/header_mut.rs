@@ -41,8 +41,27 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
+    pub fn header_static_sensitive(&mut self, key: HeaderName, value: &'static str) -> &mut Self {
+        let mut value = HeaderValue::from_static(value);
+        value.set_sensitive(true);
+        self.header.insert(key, value);
+        self
+    }
+
     pub fn header_str(&mut self, key: HeaderName, value: &str) -> Result<&mut Self, Error> {
         let val = HeaderValue::from_str(value).map_err(error::http::invalid_header)?;
+
+        self.header.insert(key, val);
+        Ok(self)
+    }
+
+    pub fn header_str_sensitive(
+        &mut self,
+        key: HeaderName,
+        value: &str,
+    ) -> Result<&mut Self, Error> {
+        let mut val = HeaderValue::from_str(value).map_err(error::http::invalid_header)?;
+        val.set_sensitive(true);
 
         self.header.insert(key, val);
         Ok(self)
@@ -66,7 +85,7 @@ impl<'a> HeaderMut<'a> {
 
     /// Client-Id: id
     pub fn client_id(&mut self, id: &str) -> Result<&mut Self, Error> {
-        self.header_str(headers::CLIENT_ID, id)
+        self.header_str_sensitive(headers::CLIENT_ID, id)
     }
 
     /// User-Agent: agent
