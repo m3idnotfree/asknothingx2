@@ -15,3 +15,11 @@ pub use http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode};
 
 #[cfg(feature = "reqwest")]
 pub use reqwest;
+
+pub trait IntoRequestBuilder {
+    type Error;
+    fn into_request_builder(
+        self,
+        client: &reqwest::Client,
+    ) -> Result<reqwest::RequestBuilder, Self::Error>;
+}
