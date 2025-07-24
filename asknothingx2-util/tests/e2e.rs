@@ -52,7 +52,7 @@ async fn get() {
         .mount(&mock_server)
         .await;
 
-    let config = preset::for_test("test/1.0");
+    let config = preset::testing("test/1.0");
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/test", mock_server.uri())).unwrap();
@@ -78,7 +78,7 @@ async fn delay() {
         .await;
 
     let config =
-        preset::for_test("test/1.0").timeouts(Duration::from_secs(2), Duration::from_millis(300));
+        preset::testing("test/1.0").timeouts(Duration::from_secs(2), Duration::from_millis(300));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/slow", mock_server.uri())).unwrap();
@@ -126,7 +126,7 @@ async fn redirect() {
         .mount(&mock_server)
         .await;
 
-    let config = preset::for_test("test/1.0").redirect(Policy::limited(3));
+    let config = preset::testing("test/1.0").redirect(Policy::limited(3));
     let client = config.build_client().unwrap();
 
     let url = Url::parse(&format!("{}/redirect1", mock_server.uri())).unwrap();
@@ -158,7 +158,7 @@ async fn bytes_iter() {
         Bytes::from("chunk3"),
     ];
     let body = RequestBody::from_bytes_iter(chunks.clone());
-    let config = preset::for_test("test/1.0")
+    let config = preset::testing("test/1.0")
         .timeouts(Duration::from_millis(500), Duration::from_millis(100));
     let client = config.build_client().unwrap();
 
@@ -205,7 +205,7 @@ async fn file_stream() {
     let file = tokio::fs::File::open(temp_file.path()).await.unwrap();
 
     let body = RequestBody::from_file(file);
-    let config = preset::for_test("test/1.0")
+    let config = preset::testing("test/1.0")
         .timeouts(Duration::from_millis(500), Duration::from_millis(100));
     let client = config.build_client().unwrap();
 
