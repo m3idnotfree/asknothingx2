@@ -45,10 +45,11 @@ mod user_agents {
 /// # Examples
 ///
 /// ```rust
-/// use crate::preset::{Preset, rest_api};
+/// use std::time::Duration;
+/// use asknothingx2_util::api::preset::{self, Preset};
 ///
 /// // Using a predefined preset
-/// let client = rest_api("MyApp/1.0").build_client()?;
+/// let client = preset::rest_api("MyApp/1.0").build_client()?;
 ///
 /// // Customizing with builder methods
 /// let client = Preset::new()
@@ -56,6 +57,7 @@ mod user_agents {
 ///     .timeouts(Duration::from_secs(60), Duration::from_secs(5))
 ///     .http2(true, None)
 ///     .build_client()?;
+/// #     Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 ///
 /// # Security Notes
