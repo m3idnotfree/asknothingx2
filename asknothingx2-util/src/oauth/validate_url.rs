@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use url::Url;
 
-/// https://docs.rs/oauth2/latest/src/oauth2/types.rs.html#233
+/// <https://docs.rs/oauth2/latest/src/oauth2/types.rs.html#233>
 #[derive(Clone)]
 pub struct ValidateUrl(Url, String);
 

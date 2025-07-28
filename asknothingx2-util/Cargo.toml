@@ -10,6 +10,10 @@ license = "MIT"
 keywords = ["asknothing", "oauth2", "http", "web", "client"]
 categories = ["web-programming", "authentication", "api-bindings", "network-programming"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 oauth = ["oauth2", "url"]
 api = ["bytes", "http", "dep:reqwest", "url", "serde_json", "serde_urlencoded", "tracing", "base64", "dep:tokio"]

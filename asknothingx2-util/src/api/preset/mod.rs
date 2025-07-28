@@ -62,7 +62,7 @@ mod user_agents {
 ///
 /// # Security Notes
 ///
-/// See [`SecurityConfig`] for security-related configuration options and
+/// See [`SecurityProfile`] for security-related configuration options and
 /// [`debug_mode()`](Self::debug_mode) for important warnings about insecure settings.
 #[derive(Debug)]
 pub struct Preset {
@@ -247,6 +247,22 @@ impl Preset {
     }
 
     /// Configure default headers sent with every request.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use asknothingx2_util::api::preset::Preset;
+    /// # fn run() -> Result<(), asknothingx2_util::api::Error> {
+    /// let preset = Preset::new().default_headers(|headers| {
+    ///     headers.accept_json()
+    ///         .content_type_json()
+    ///         .user_agent("user-agent/1.0")?;
+    ///     Ok(())
+    /// })?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn default_headers<F>(self, f: F) -> Result<Self, Error>
     where
         F: FnOnce(&mut HeaderMut<'_>) -> Result<(), Error>,

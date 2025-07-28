@@ -170,7 +170,7 @@ impl<'a> HeaderMut<'a> {
         self
     }
 
-    /// Content-Length: <length>
+    /// Content-Length: length
     pub fn content_length(&mut self, length: u64) -> &mut Self {
         self.header.insert(
             CONTENT_LENGTH,
@@ -275,7 +275,7 @@ impl<'a> HeaderMut<'a> {
 }
 
 impl<'a> HeaderMut<'a> {
-    /// Authorization: <type> <credentials>
+    /// Authorization: type credentials
     pub fn authorization(&mut self, auth: AuthScheme) -> &mut Self {
         self.header
             .insert(AUTHORIZATION, auth.to_header_value().unwrap());
