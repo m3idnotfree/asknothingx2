@@ -1,6 +1,5 @@
 pub mod mime_type;
 pub mod preset;
-pub mod request;
 
 mod auth_scheme;
 mod error;
