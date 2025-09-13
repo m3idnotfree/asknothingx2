@@ -6,7 +6,7 @@ edition = "2021"
 description = "asknothing"
 documentation = "https://docs.rs/asknothingx2-util"
 repository = "https://github.com/m3idnotfree/asknothingx2"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 keywords = ["asknothing", "oauth2", "http", "web", "client"]
 categories = ["web-programming", "authentication", "api-bindings", "network-programming"]
 
