@@ -1,8 +1,6 @@
-mod validate_url;
+mod new_types;
 
-pub use validate_url::ValidateUrl;
-
-pub use oauth2::{
+pub use new_types::{
     AccessToken, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl,
-    RefreshToken, RevocationUrl, Scope, TokenUrl,
+    RefreshToken, RevocationUrl, Scope, TokenUrl, ValidateUrl,
 };
