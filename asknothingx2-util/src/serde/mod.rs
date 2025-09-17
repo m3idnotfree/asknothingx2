@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{de::IntoDeserializer, Deserialize, Deserializer, Serialize, Serializer};
 
 /// https://github.com/serde-rs/serde/issues/2362
@@ -95,6 +97,105 @@ where
             let seq = serializer.serialize_seq(Some(0))?;
             seq.end()
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EmptyObject;
+
+impl Display for EmptyObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("{}")
+    }
+}
+
+impl Serialize for EmptyObject {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let map = serializer.serialize_map(Some(0))?;
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for EmptyObject {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::{Error, Visitor};
+
+        struct EmptyObjectVisitor;
+        impl<'de> Visitor<'de> for EmptyObjectVisitor {
+            type Value = EmptyObject;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(stringify!(EmptyObject))
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                if let Some(key) = map.next_key::<String>()? {
+                    return Err(Error::custom(format!(
+                        "expected empty object, but found field: {}",
+                        key
+                    )));
+                }
+                Ok(EmptyObject)
+            }
+        }
+
+        deserializer.deserialize_map(EmptyObjectVisitor)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EmptyArray;
+
+impl Display for EmptyArray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[]")
+    }
+}
+
+impl Serialize for EmptyArray {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let seq = serializer.serialize_seq(Some(0))?;
+        seq.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for EmptyArray {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::{Error, Visitor};
+        struct EmptyArrayVisitor;
+        impl<'de> Visitor<'de> for EmptyArrayVisitor {
+            type Value = EmptyArray;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(stringify!(EmptyArray))
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                if let Some(_element) = seq.next_element::<serde_json::Value>()? {
+                    return Err(Error::custom("expected empty array, but found element"));
+                }
+                Ok(EmptyArray)
+            }
+        }
+        deserializer.deserialize_seq(EmptyArrayVisitor)
     }
 }
 
@@ -347,6 +448,34 @@ mod tests {
             let json = serde_json::to_string(&original).unwrap();
             let deserialized: EmptyArray = serde_json::from_str(&json).unwrap();
             assert_eq!(original, deserialized);
+        }
+    }
+
+    mod strict_empty {
+        use crate::serde::{EmptyArray, EmptyObject};
+
+        #[test]
+        fn array() {
+            let empty = EmptyArray;
+            let json = serde_json::to_string(&empty).unwrap();
+            assert_eq!(json, "[]");
+
+            let deserialized: EmptyArray = serde_json::from_str(&json).unwrap();
+            assert_eq!(empty, deserialized);
+
+            assert_eq!("[]", EmptyArray.to_string());
+        }
+
+        #[test]
+        fn object() {
+            let object = EmptyObject;
+            let json = serde_json::to_string(&object).unwrap();
+            assert_eq!(json, "{}");
+
+            let deserialized: EmptyObject = serde_json::from_str(&json).unwrap();
+            assert_eq!(object, deserialized);
+
+            assert_eq!("{}", EmptyObject.to_string());
         }
     }
 }
