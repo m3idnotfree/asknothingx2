@@ -20,39 +20,36 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 base64 = { version = "0.22.1", optional = true }
-bytes = { version = "1.10.1", optional = true }
+bytes = { version = "1.11.0", optional = true }
 futures-util = { version = "0.3.31", optional = true }
-http = { version = "1.3.1", optional = true }
+http = { version = "1.4.0", optional = true }
 percent-encoding = "2.3.2"
-reqwest = { version = "0.12.23", default-features = false, features = [
+reqwest = { version = "0.13.1", features = [
   "brotli",
-  "charset",
   "cookies",
   "gzip",
   "hickory-dns",
-  "http2",
   "json",
   "multipart",
-  "rustls-tls",
   "stream"
 ], optional = true }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = { version = "1.0.143", optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.149", optional = true }
 serde_urlencoded = { version = "0.7.1", optional = true }
 sha2 = { version = "0.10.9", optional = true }
 subtle = { version = "2.6.1", optional = true }
-tokio = { version = "1.47.1", features = ["fs", "process", "sync"], optional = true }
-tokio-util = { version = "0.7.16", features = ["io"], optional = true }
-tracing = { version = "0.1.41", optional = true }
-url = { version = "2.5.7", optional = true }
-zeroize = { version = "1.8.1", features = ["derive"], optional = true }
+tokio = { version = "1.49.0", features = ["fs", "process", "sync"], optional = true }
+tokio-util = { version = "0.7.18", features = ["io"], optional = true }
+tracing = { version = "0.1.44", optional = true }
+url = { version = "2.5.8", optional = true }
+zeroize = { version = "1.8.2", features = ["derive"], optional = true }
 
 [dev-dependencies]
 futures = "0.3.31"
-proptest = "1.7.0"
-serde_json = "1.0.143"
-tempfile = "3.22.0"
-tokio-test = "0.4.4"
+proptest = "1.9.0"
+serde_json = "1.0.149"
+tempfile = "3.24.0"
+tokio-test = "0.4.5"
 wiremock = "0.6.5"
 
 [features]
